@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../python36env_graphbasedPM/.idea/python36env_GraphbasedPM.iml" filepath="$PROJECT_DIR$/../python36env_graphbasedPM/.idea/python36env_GraphbasedPM.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../python36env_graphbasedPM/.idea/GraphbasedPM.iml" filepath="$PROJECT_DIR$/../python36env_graphbasedPM/.idea/GraphbasedPM.iml" />
     </modules>
   </component>
 </project>
