@@ -6,7 +6,7 @@
 from neo4j import GraphDatabase
 from helper import joinHelper, splitHelper
 import gpd
-import gateway
+from bulk import gateway
 
 
 def print_hi(name):
@@ -134,16 +134,16 @@ if __name__ == '__main__':
     gpd = gpd.GraphbasedDiscovery(session, gateway)
     gate = gateway.GateDiscovery(session)
 
-    GWlist, joinGWlist = gpd.discoverGW(session, initialNodeName, counter)  # node split terdekat
-    print('GWlist= ', GWlist, 'joinGWlist= ', joinGWlist)
+    GWlist, joinXORList, joinANDList = gpd.discoverGW(session, initialNodeName, counter)  # node split terdekat
+    print('GWlist= ', GWlist, 'joinXORList= ', joinXORList, 'joinANDList= ', joinANDList)
     #
 
     # setelah split selesai, maka periksa JOIN untuk disisipkan
-    for joinGW in joinGWlist:
-        print('joinGW= ', joinGW)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
-        andJoinGW_name = joinGW[0]
-        exitNodes = joinGW[1]
-        joinNodeName = joinGW[2]
+    for ANDjoin in joinANDList:
+        print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
+        andJoinGW_name = ANDjoin[0]
+        exitNodes = ANDjoin[1]
+        joinNodeName = ANDjoin[2]
         gate.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
     #
     #

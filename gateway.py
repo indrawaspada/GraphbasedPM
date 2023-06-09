@@ -84,19 +84,10 @@ class GateDiscovery:
 
 
             # input : valid blocks
-            # output:
+            # output: joinNode with its all possible entrances and paths
             joinNodeEnum = generalHelper.enumJoinNode(valid_blocks)
-            # joinNodeEnum = {}
-            # for entrancePair in valid_blocks:  # entrancePair = ('CUSTOMS_DEL', 'VESSEL_ATB')
-            #     for joinInfo in valid_blocks[entrancePair]:  # [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE']], ['TRUCK_IN', ['JOB_DEL', 'STACK']]]
-            #         joinNode = joinInfo[0]
-            #         exitPair = joinInfo[1]
-            #         if joinNode not in joinNodeEnum:  # 'JOB_DEL'
-            #             joinNodeEnum[joinInfo[0]] = []
-            #         joinNodeEnum[joinNode].append([entrancePair, exitPair])  # exit = ['CUSTOMS_DEL', 'DISCHARGE']
 
-            # kalau ada tuple entrancePair yang beririsan maka gabungkan
-            mergedEntrancePair = []
+            # merge entrances or exits with beririsan
             for joinNode in joinNodeEnum:
                 entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
                 merged_entrance_to_exit_pairs = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode, entrance_to_exit_pairs)
