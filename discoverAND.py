@@ -28,7 +28,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
         # Get valid block from 2 entrances
         # input: list of entrances
         # output:list of entrance-allPathVariantsTo-exit
-        allPathVariantsFromEntranceToExit = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, list(A), allJoinNodes)
+        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, S, C, F, list(A), allJoinNodes)
 
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()
@@ -126,7 +126,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
                     # print('i=', i)
                     # print('Cu= ', Cu)
                     # print('C=', C)
-                    print('C[CP[i]]= ', C[SCP[i]])
+                    print('C[SCP[i]]= ', C[SCP[i]])
                     Cu.update(C[SCP[i]])  # tambahkan cover (dari s1, s2,...) ke set
                     Fi.update(F[SCP[i]])  # tambahkan future ke set
                     S.remove(SCP[i])  # hapus dari S karena digantikan dg g

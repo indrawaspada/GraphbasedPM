@@ -214,3 +214,15 @@ def clearSplitStatus(session, nodeName):
     result = session.run(q_clearSplitStatus, nodeName=nodeName)
 
     return None
+
+def entranceScanner(session, t):
+    S = getAllDirectSuccessors(session, t)  # S
+    C = {}
+    F = {}
+    for s1 in S:
+        C[s1] = {s1}  # C = {s1:{s1}, ...}
+        F[s1] = set()  # F = {s1:{}, ...}
+        for s2 in S:
+            if (s1 != s2) and (isConcurrent(session, s1, s2)):
+                F[s1].add(s2)
+    return S, C, F

@@ -34,8 +34,10 @@ def discoverXOR(session, t, S, C, F, counter, GWlist, joinXORgw):
         # Get valid block from 2 entrances
         # input: list of entrances
         # output:list of entrance-allPathVariantsTo-exit
-        allPathVariantsFromEntranceToExit = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, list(X),
+        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, S, C, F, list(X),
                                                                                                 allJoinNodes)
+        if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
+            return S, C, F, counter, X, GWlist, joinXORgw
 
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()
@@ -96,34 +98,60 @@ def discoverXOR(session, t, S, C, F, counter, GWlist, joinXORgw):
         # pick the minimal number of entrancesPairPaths --> KOREKSI
         # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
 
-        shortest = 1000
-        closestHirarchies = []
+        smallestNumOfEntrances = 1000
+        smallerBlocks = []
         theJoinNode = ''
         for joinNode in merged_entrance_to_exit_pairs:  # β
             for entrance_to_exit_pairs in merged_entrance_to_exit_pairs[joinNode]:  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
                 NumOfEntrances = len(entrance_to_exit_pairs[0])
-                if NumOfEntrances < shortest:
-                    shortest = NumOfEntrances
-                    closestHirarchies = [[entrance_to_exit_pairs, joinNode]]
-                elif NumOfEntrances == shortest:
-                    closestHirarchies.append([entrance_to_exit_pairs, joinNode])
-        print('closestHirarchy= ', closestHirarchies)
+                if NumOfEntrances < smallestNumOfEntrances:
+                    smallestNumOfEntrances = NumOfEntrances
+                    smallerBlocks = [[entrance_to_exit_pairs, joinNode]]
+                elif NumOfEntrances == smallestNumOfEntrances:
+                    smallerBlocks.append([entrance_to_exit_pairs, joinNode])
+        print('smallerBlocks= ', smallerBlocks)
 
-        for closestHirarchy in closestHirarchies:
-            SCP = list(closestHirarchy[0][0])
+        # ambil jarak terdekat
+        for block in smallerBlocks:
+            # block
+            pass
+
+
+        for closestHirarchy in smallerBlocks:
+            SCP = list(closestHirarchy[0][0])# entrances
             g = insertXORSplitGW(session, t, SCP, counter)
 
-        # TODO: deteksi XOR-join
+            # TODO: deteksi XOR-join
+            # insert join_AND_gw
+            JCP = closestHirarchy[0][1]  # JCP = exits
+            joinNode = closestHirarchy[1]
+            joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
 
-        # insert join_AND_gw
-        exits = [] # temp
-        joinNode = [] # temp
-        joinXORgw.append(["xorJoinGW_" + str(counter), exits, joinNode])
-        # deteksi XOR-join
+            counter = counter + 1  # node number in a block counter
 
-        # catat XOR-join
-
-    # jika X sudah kosong maka hasil return nilai nya akan menghentikan loop while
+            SCPLen = len(SCP)  # ['BAPLIE', 'VESSEL_ATB']
+            if g is not None:
+                GWlist.append(g)
+                Cu = set()
+                Fi = set()
+                for i in range(SCPLen):  # jumlah node entrace pair (s1,s2,...)
+                    # print('i=', i)
+                    # print('Cu= ', Cu)
+                    # print('C=', C)
+                    print('C[SCP[i]]= ', C[SCP[i]])
+                    Cu.update(C[SCP[i]])  # tambahkan cover (dari s1, s2,...) ke set
+                    Fi.update(F[SCP[i]])  # tambahkan future ke set
+                    S.remove(SCP[i])  # hapus dari S karena digantikan dg g
+                    C.pop(SCP[i])
+                    F.pop(SCP[i])
+                S.append(g)  # tambahkan node gateway ke S
+                C[g] = Cu
+                # print('C= ', C)
+                # print('F= ', F)
+                # print('Fi= ', Fi)
+                F[g] = Fi
+                print('F= ', F)
+        print('S: ', S)
     return S, C, F, counter, X, GWlist, joinXORgw
 
 def insertXORSplitGW(session, splitNodeName, splitPairs, counter):

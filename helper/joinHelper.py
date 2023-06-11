@@ -167,39 +167,40 @@ def mergePathPairs(listOfPathPairs):  # [ [ [path_pair],status, exit ], [...] ]
 # input: semua variasi pasangan entrance, dan pasangan exit
 # output: entrance, dan exit yang sudah di merge
 # cara merge, jika ada irisan
-def mergeEntrance_exit_pairs(nodeJoinCounter, nodeJoin, entrance_exit_pairs):
+def mergeEntrance_exit_pairs(joinNodeEnum, nodeJoin, entrance_exit_pairs):
 #     nodeJoin = 'JOB_DEL'
 #     tuplePairs = [('CUSTOMS_DEL', 'VESSEL_ATB'), ('BAPLIE', 'CUSTOMS_DEL')]
 #     tuplePairs = entrance_exit_pairs
     if len(entrance_exit_pairs)>1:
         combPair = generalHelper.combinationPairInList(entrance_exit_pairs)
         for pair in combPair: # tiap entrance_exit di pasangkan
-            j_len = len(nodeJoinCounter[nodeJoin])
+            j_len = len(joinNodeEnum[nodeJoin])
             if j_len>1:
 
                 print('paaiiir= ', pair)
                 entrance0 = pair[0][0] #('CUSTOMS_DEL', 'VESSEL_ATB')
                 exit0 = pair[0][1]
+                dist0 = pair[0][2]
     #             print('paaiiir0= ', pair0)
                 entrance1 = pair[1][0]
                 exit1 = pair[1][1]
+                dist1 = pair[1][2]
                 result = intersection(entrance0,entrance1)
                 if result:
                     mergedEntrances = tuple(set(entrance0 + entrance1))
 
-                    if pair[0] in (nodeJoinCounter[nodeJoin]):
-                        nodeJoinCounter[nodeJoin].remove(pair[0]) # singkirkan pasangan yg di merge
-                    if pair[1] in (nodeJoinCounter[nodeJoin]):
-                        nodeJoinCounter[nodeJoin].remove(pair[1])
+                    if pair[0] in (joinNodeEnum[nodeJoin]):
+                        joinNodeEnum[nodeJoin].remove(pair[0]) # singkirkan pasangan yg di merge
+                    if pair[1] in (joinNodeEnum[nodeJoin]):
+                        joinNodeEnum[nodeJoin].remove(pair[1])
                     mergedExits = list(set(exit0+exit1))
+                    mergedDistance = dist0+dist1
                     # masukkan hasil merge
-                    if [mergedEntrances, mergedExits] not in nodeJoinCounter[nodeJoin]:
-                        nodeJoinCounter[nodeJoin].append([mergedEntrances, mergedExits])
+                    if [mergedEntrances, mergedExits] not in joinNodeEnum[nodeJoin]:
+                        joinNodeEnum[nodeJoin].append([mergedEntrances, mergedExits])
     else:
         pass
-
-#             break
-    return nodeJoinCounter
+    return joinNodeEnum # mergedJoinNodeEnum
 
 
 

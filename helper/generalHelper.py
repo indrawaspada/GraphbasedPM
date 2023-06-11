@@ -1,3 +1,5 @@
+from helper import splitHelper
+
 # memasangkan kombinasi antar element dalam list
 def combinationPairInList(theList):
     combinations = []
@@ -99,7 +101,7 @@ def getEntranceToJoinPath(session, entrance, joinNode):
     return paths, status
 
 
-def getAllPossiblePathsFromEntranceToExit(session, t, A, allJoinNodes):
+def getAllPossiblePathsFromEntranceToExit(session, t, S, C, F, A, allJoinNodes):
     entrancePairList = combinationPairInList(list(A))
     allEntranceCombPaths = []
     for joinNode in allJoinNodes:
@@ -112,6 +114,19 @@ def getAllPossiblePathsFromEntranceToExit(session, t, A, allJoinNodes):
                 if entrance == joinNode:
                     # insert invisible task between splitNode and joinNode
                     entrance = insertInvisibleTask(session,t, joinNode)
+
+                    S, C, F = splitHelper.entranceScanner(session, t)
+                    allEntranceCombPaths = []
+                    return allEntranceCombPaths, S, C, F
+
+                    # tambahkan ke S
+                    # S.remove(joinNode)
+                    # S.append(entrance)
+                    # C[entrance] = {entrance}
+                    # C.pop(joinNode)
+                    # F[entrance] = {entrance}
+                    # F.pop(joinNode)
+
                     # print('status insert invisible task = ', status)
 
                 paths = getEntranceToJoinPath(session, entrance, joinNode)
@@ -123,18 +138,19 @@ def getAllPossiblePathsFromEntranceToExit(session, t, A, allJoinNodes):
             if len(entrancePairPaths) > 0:
                 allEntranceCombPaths.append(entrancePairPaths)
     
-    return allEntranceCombPaths
+    return allEntranceCombPaths, S, C, F
 
 def enumJoinNode(valid_blocks):
+    # ('CUSTOMS_DEL', 'VESSEL_ATB'): [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE'], 3], ['TRUCK_IN', ['JOB_DEL', 'STACK'], 5]]}
     joinNodeEnum = {}
     for entrancePair in valid_blocks:  # entrancePair = ('CUSTOMS_DEL', 'VESSEL_ATB')
-        for joinInfo in valid_blocks[
-            entrancePair]:  # [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE']], ['TRUCK_IN', ['JOB_DEL', 'STACK']]]
-            joinNode = joinInfo[0]
-            exitPair = joinInfo[1]
+        for pathToJoinInfo in valid_blocks[entrancePair]:  # [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE']], ['TRUCK_IN', ['JOB_DEL', 'STACK']]]
+            joinNode = pathToJoinInfo[0]
+            exitPair = pathToJoinInfo[1]
+            distance = pathToJoinInfo[2]
             if joinNode not in joinNodeEnum:  # 'JOB_DEL'
-                joinNodeEnum[joinInfo[0]] = []
-            joinNodeEnum[joinNode].append([entrancePair, exitPair])  # exit = ['CUSTOMS_DEL', 'DISCHARGE']
+                joinNodeEnum[pathToJoinInfo[0]] = []
+            joinNodeEnum[joinNode].append([entrancePair, exitPair, distance])  # exit = ['CUSTOMS_DEL', 'DISCHARGE']
     return joinNodeEnum
 
 def insertInvisibleTask(session, splitNodeName, joinNodeName):
