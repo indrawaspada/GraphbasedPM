@@ -22,13 +22,98 @@ def discoverXOR(session, t, S, C, F, counter, GWlist, joinXORgw):
 
         if len(X) > 0:  # jika ada XOR
             X.add(s1)
-            break  # dikerjakan satu gateway dulu (yg CF nya sama)
+            break  # dikerjakan satu gateway dulu (yg F nya sama)
 
     # cari:
 
     if len(X) > 0:
-        X_list = list(X)
-        g = insertXORSplitGW(session, t, X_list, counter)
+        print('=========== ditemukan XOR split nodes ===============')
+        # periksa kemungkinan ada hierarki dalam tipe gateway yg sama
+        allJoinNodes = joinHelper.getAllJoinNodes(session)
+
+        # Get valid block from 2 entrances
+        # input: list of entrances
+        # output:list of entrance-allPathVariantsTo-exit
+        allPathVariantsFromEntranceToExit = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, list(X),
+                                                                                                allJoinNodes)
+
+        # input 2 entrance, some paths, 1 join node. Result: valid block only
+        valid_blocks = dict()
+        for pathVariantsFromEntranceToExit in allPathVariantsFromEntranceToExit:
+            entrance0 = pathVariantsFromEntranceToExit[0][0]
+            paths0 = pathVariantsFromEntranceToExit[0][1]  # [['VESSEL_ATB', 'DISCHARGE', 'JOB_DEL'], ['VESSEL_ATB', 'DISCHARGE', 'STACK']]
+            entrance1 = pathVariantsFromEntranceToExit[1][0]
+            paths1 = pathVariantsFromEntranceToExit[1][1]
+            joinNode = pathVariantsFromEntranceToExit[0][2]
+
+            # dapat valid kandidat regions
+            allValidEntrancePairToJoinBlock = joinHelper.getValidEntrancesToJoinPaths(paths0,
+                                                                                      paths1)  # dapat path yg valid, bs lebih dari 1
+            print('validEntranceCombPaths= ', allValidEntrancePairToJoinBlock)
+
+            # jika ada validPaths
+            for validEntrancePairToJoinBlock in allValidEntrancePairToJoinBlock:  # [validEntrancesToJoinPath, status, [exit0,exit1]
+                regionA = allValidEntrancePairToJoinBlock[0][0][0]
+                print('regionA= ', regionA)  # regionA=  ['CUSTOMS_DEL', 'JOB_DEL']
+                regionB = allValidEntrancePairToJoinBlock[0][0][1]
+                print('regionB= ', regionB)  # regionB=  ['VESSEL_ATB', 'DISCHARGE', 'STACK']
+
+                # tidak ada deteksi shortcut pada blok XOR
+                # tetapi perlu menandai semua potensi join-XOR dalam blok XOR
+                # delete: generalHelper.shortcutHandlerBetweenRegion(session, regionA, regionB)
+
+                exit = validEntrancePairToJoinBlock[2]  # [exit0,exit1]
+                if len(validEntrancePairToJoinBlock[0]) > 0:  # validEntrancesToJoinPath --> ada distance path nya
+                    entrancePair = [entrance0, entrance1]
+                    entrancePair.sort()  # seragamkan
+                    entrancePair = tuple(entrancePair)  # ubah ke tuple
+                    distance = validEntrancePairToJoinBlock[0][2]
+
+                    if entrancePair not in valid_blocks:  # cari pasangan entrance yang ada di daftar valid block
+                        valid_blocks[entrancePair] = []
+                        valid_blocks[entrancePair].append([joinNode, exit, distance])
+                    else:
+                        valid_blocks[entrancePair].append([joinNode, exit, distance])  # 27 mei 2023, sudah ada distance
+
+        print('valid_blocks==> ', valid_blocks)
+        # valid_blocks==>  {
+        # ('BAPLIE', 'VESSEL_ATB'): [['DISCHARGE', ['BAPLIE', 'VESSEL_ATB'], 2]],
+        # ('BAPLIE', 'CUSTOMS_DEL'): [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE'], 3], ['TRUCK_IN', ['JOB_DEL', 'STACK'], 5]],
+        # ('CUSTOMS_DEL', 'VESSEL_ATB'): [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE'], 3], ['TRUCK_IN', ['JOB_DEL', 'STACK'], 5]]}
+
+        # input : valid blocks
+        # output: joinNode with its all possible entrances and paths
+        joinNodeEnum = generalHelper.enumJoinNode(valid_blocks)
+
+        # kalau ada tuple entrancePair yang beririsan maka gabungkan
+        mergedEntrancePair = []
+        for joinNode in joinNodeEnum:
+            entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
+            merged_entrance_to_exit_pairs = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode,
+                                                                                entrance_to_exit_pairs)
+        print('mergedEntrance_exit_pairs= ', merged_entrance_to_exit_pairs)
+
+        # pick the minimal number of entrancesPairPaths --> KOREKSI
+        # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
+
+        shortest = 1000
+        closestHirarchies = []
+        theJoinNode = ''
+        for joinNode in merged_entrance_to_exit_pairs:  # β
+            for entrance_to_exit_pairs in merged_entrance_to_exit_pairs[joinNode]:  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
+                NumOfEntrances = len(entrance_to_exit_pairs[0])
+                if NumOfEntrances < shortest:
+                    shortest = NumOfEntrances
+                    closestHirarchies = [[entrance_to_exit_pairs, joinNode]]
+                elif NumOfEntrances == shortest:
+                    closestHirarchies.append([entrance_to_exit_pairs, joinNode])
+        print('closestHirarchy= ', closestHirarchies)
+
+        for closestHirarchy in closestHirarchies:
+            SCP = list(closestHirarchy[0][0])
+            g = insertXORSplitGW(session, t, SCP, counter)
+
+        # TODO: deteksi XOR-join
 
         # insert join_AND_gw
         exits = [] # temp

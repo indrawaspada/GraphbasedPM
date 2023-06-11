@@ -99,7 +99,7 @@ def getEntranceToJoinPath(session, entrance, joinNode):
     return paths, status
 
 
-def getAllPossiblePathsFromEntranceToExit(session, A, allJoinNodes):
+def getAllPossiblePathsFromEntranceToExit(session, t, A, allJoinNodes):
     entrancePairList = combinationPairInList(list(A))
     allEntranceCombPaths = []
     for joinNode in allJoinNodes:
@@ -107,6 +107,13 @@ def getAllPossiblePathsFromEntranceToExit(session, A, allJoinNodes):
             # print('entrancePair====: ', entrancePair)
             entrancePairPaths = []
             for entrance in entrancePair:  # tiap entrance dalam entrance pair
+
+                # cek jika entrance = joinNode maka sisipkan invisible task
+                if entrance == joinNode:
+                    # insert invisible task between splitNode and joinNode
+                    entrance = insertInvisibleTask(session,t, joinNode)
+                    # print('status insert invisible task = ', status)
+
                 paths = getEntranceToJoinPath(session, entrance, joinNode)
                 if paths[1] == 'Exist':
                     entrancePairPaths.append([entrance, paths[0], joinNode])
@@ -129,3 +136,28 @@ def enumJoinNode(valid_blocks):
                 joinNodeEnum[joinInfo[0]] = []
             joinNodeEnum[joinNode].append([entrancePair, exitPair])  # exit = ['CUSTOMS_DEL', 'DISCHARGE']
     return joinNodeEnum
+
+def insertInvisibleTask(session, splitNodeName, joinNodeName):
+    # Split detection
+
+    q_insertInvisibleTask = '''
+            MATCH (n {Name:$splitNodeName})-[r:DFG]->(a:RefModel)
+            WHERE a.Name = $joinNodeName
+            MERGE (n)-[s:DFG {rel:r.rel}]->(invTask:RefModel {Name:"inv"+"_"+n.Name+"_"+a.Name})
+            SET s.dff = r.dff
+            WITH s, r, invTask, a
+            MERGE (invTask)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
+            // hapus r
+            DELETE r
+            SET s.split = True, t.dff = s.dff, t.join = True, invTask.label= 'INVISIBLE'
+            RETURN invTask.Name
+            '''
+    records = session.run(q_insertInvisibleTask, splitNodeName=splitNodeName, joinNodeName=joinNodeName)
+
+    for rec in records:
+        if rec is not None:
+            for invTask in rec:
+                print(invTask)
+                return invTask
+        else:
+            return None

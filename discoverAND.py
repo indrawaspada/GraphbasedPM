@@ -21,13 +21,14 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
             break  # dikerjakan satu gateway dulu (yg CF nya sama)
 
     if (len(A) > 0):  # multi konkuren nodes --> cek dulu apa ada 1 join node utk semua split node?
-        print('=========== ditemukan multi konkuren nodes ===============')
+        print('=========== ditemukan konkuren nodes ===============')
+        # periksa kemungkinan ada hierarki dalam tipe gateway yg sama
         allJoinNodes = joinHelper.getAllJoinNodes(session)
 
         # Get valid block from 2 entrances
         # input: list of entrances
         # output:list of entrance-allPathVariantsTo-exit
-        allPathVariantsFromEntranceToExit = generalHelper.getAllPossiblePathsFromEntranceToExit(session, list(A), allJoinNodes)
+        allPathVariantsFromEntranceToExit = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, list(A), allJoinNodes)
 
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()
