@@ -173,10 +173,14 @@ if __name__ == '__main__':
         exitNodes = ANDjoin[1]
         joinNodeName = ANDjoin[2]
         discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
-    #
-    #
-    #
-    #
+
+
+    # lengkapi antar split dan antar join dengan invisible task
+    generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
+
+
+
+
 
 
 

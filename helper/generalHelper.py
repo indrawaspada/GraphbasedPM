@@ -210,3 +210,24 @@ def checkHierarchy(merged_entrance_to_exit_pairs):
                 smallerBlocks.append([entrance_to_exit_pairs, joinNode])
     print('smallerBlocks= ', smallerBlocks)
     return smallerBlocks
+
+
+def insertInvisibleTaskBetweenConsecutiveGateway(session):
+    q_insertInvisibleTaskBetweenConsecutiveGateway = '''
+        MATCH (a:GW)-[r:DFG]->(c:GW)
+        MERGE (a)-[s:DFG {rel:r.rel}]->(invTask:RefModel {Name:"inv"+"_"+a.Name+"_"+c.Name})
+        SET s.dff = r.dff
+        WITH s, r, invTask, c
+        MERGE (invTask)-[t:DFG {rel:r.rel, dff:r.dff}]->(c)
+        // hapus r
+        DELETE r
+        SET t.dff = s.dff, invTask.label= 'INVISIBLE'
+        RETURN invTask.Name
+
+        '''
+    results = session.run(q_insertInvisibleTaskBetweenConsecutiveGateway)
+
+    length = 0
+    for record in results:
+        invTaskName = record[0]
+    return invTaskName
