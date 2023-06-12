@@ -1,4 +1,4 @@
-from helper import generalHelper, joinHelper
+from helper import generalHelper, joinHelper, blockHelper
 
 # 1. deteksi xor split
 # 2. temukan hirarki
@@ -99,61 +99,27 @@ def discoverXOR(session, t, S, C, F, counter):
                 if finish:
                     break
         mergedJoinNodeEnum = joinNodeEnum
-        # print('mergedEntrance_exit_pairs= ', merged_entrance_to_exit_pairs)
+        closestHirarchies = blockHelper.getTheClosestHierarchy(mergedJoinNodeEnum)
 
-        # cek kalau ada joinNode bersama maka tidak perlu cek hierarki
-        # cek jika semua node dalam S ada di entrances maka ada joinNode bersama
-        # TODO: cek apakah ada joinNode bersama
-        # sharedJoinNode = True
-        # for jn in merged_entrance_to_exit_pairs:
-        #     for s in S:
-        #         if s in merged_entrance_to_exit_pairs[jn][0]:
-        #             pass
-        #         else: # kalau ada yang tidak ada di S maka false
-        #             sharedJoinNode = False
-
-        # if not sharedJoinNode:
-        #     # check hierarchy
-        # else:
-        #     # insert split
-
-        # pick the minimal number of entrancesPairPaths --> KOREKSI
-        # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
-        # smallerBlocks = checkHierarchy(merged_entrance_to_exit_pairs)
-
-
-        # smallestNumOfEntrances = 1000
-        # smallerBlocks = []
-        # theJoinNode = ''
-        # for joinNode in merged_entrance_to_exit_pairs:  # β
-        #     for entrance_to_exit_pairs in merged_entrance_to_exit_pairs[joinNode]:  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-        #         NumOfEntrances = len(entrance_to_exit_pairs[0])
-        #         if NumOfEntrances < smallestNumOfEntrances:
-        #             smallestNumOfEntrances = NumOfEntrances
-        #             smallerBlocks = [[entrance_to_exit_pairs, joinNode]]
-        #         elif NumOfEntrances == smallestNumOfEntrances:
-        #             smallerBlocks.append([entrance_to_exit_pairs, joinNode])
-        # print('smallerBlocks= ', smallerBlocks)
-        #
-        # # ambil jarak terdekat
-        # for block in smallerBlocks:
-        #     # block
-        #     pass
-
-        for splitArea in mergedJoinNodeEnum[joinNode]:
-            SCP = list(splitArea[0])
+        for closestHirarchy in closestHirarchies:
+            # insert split_AND_gw
+            SCP = list(closestHirarchy[0][0])  # SCP = entrances, bisa lebih dari 2
             g = insertXORSplitGW(session, t, SCP, counter)
+            print('g= ', g)
+            # insert join_AND_gw
+            JCP = closestHirarchy[0][1]  # JCP = exits
+            joinNode = closestHirarchy[1]
+            joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
 
-        # for closestHirarchy in smallerBlocks:
-        #     SCP = list(closestHirarchy[0][0])# entrances
+        # for splitArea in mergedJoinNodeEnum[joinNode]:
+        #     SCP = list(splitArea[0])
         #     g = insertXORSplitGW(session, t, SCP, counter)
 
 
-
-            # TODO: deteksi XOR-join
-            # insert join_AND_gw
-            JCP = splitArea[1]  # JCP = exits
-            joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
+            # # TODO: deteksi XOR-join
+            # # insert join_AND_gw
+            # JCP = splitArea[1]  # JCP = exits
+            # joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
 
             counter = counter + 1  # node number in a block counter
 

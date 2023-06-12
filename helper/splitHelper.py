@@ -226,3 +226,4 @@ def entranceScanner(session, t):
             if (s1 != s2) and (isConcurrent(session, s1, s2)):
                 F[s1].add(s2)
     return S, C, F
+

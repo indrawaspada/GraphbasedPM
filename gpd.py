@@ -34,19 +34,19 @@ class GraphbasedDiscovery:
                 if joinXORgw:
                     joinXORList.extend(joinXORgw)
 
-            # # Discover AND
-            # joinANDgw = []
-            # while True:
-            #     # meski ada penanganan shortcut mjd concurrent tp tdk perlu membuang data splitnode
-            #     S, C, F, counter, A, gwList, joinANDgw = disc_and.discoverAND(session, t, S, C, F, counter, gwList, joinANDgw)
-            #     print("A==> ", A)
-            #     if len(A) < 1:  # kalau sudah tidak ada konkurensi
-            #         break
-            #
-            #     if len(gwList) > 0:
-            #         GWlist.append(gwList)
-            #     if joinANDgw:
-            #         joinANDList.extend(joinANDgw)
+            # Discover AND
+            joinANDgw = []
+            while True:
+                # meski ada penanganan shortcut mjd concurrent tp tdk perlu membuang data splitnode
+                S, C, F, counter, A, gwList, joinANDgw = disc_and.discoverAND(session, t, S, C, F, counter, gwList, joinANDgw)
+                print("A==> ", A)
+                if len(A) < 1:  # kalau sudah tidak ada konkurensi
+                    break
+
+                if len(gwList) > 0:
+                    GWlist.append(gwList)
+                if joinANDgw:
+                    joinANDList.extend(joinANDgw)
 
             splitNodes.remove(t)  # buang split node yang sudah dikerjakan
         return GWlist, joinXORList, joinANDList

@@ -89,18 +89,18 @@ def findTheClosestJoinNodeFromConcurrentPairWithItsDistance(concurrentPair, join
             theClosestJoinNode = joinNode
     return concurrentPair, theClosestJoinNode, theClosestDistance
 
-def findTheClosestHierarchy(concurrentPairs, allJoinNodes):
-    shortest = 1000
-    theClosestConPairHierarchy = []
-    for conPair in concurrentPairs:
-        # cari conPair dengan hierarki paling awal, serta join node nya
-        result = findTheClosestJoinNodeFromConcurrentPairWithItsDistance(conPair, allJoinNodes)
-        distance = result[2]
-        if distance < shortest:
-            shortest = distance
-            theClosestConPairHierarchy = conPair
-            joinNode = result[1]
-    return theClosestConPairHierarchy  # , joinNode # dapat pasangan conPair terdekat dan node join nya
+# def findTheClosestHierarchy(concurrentPairs, allJoinNodes):
+#     shortest = 1000
+#     theClosestConPairHierarchy = []
+#     for conPair in concurrentPairs:
+#         # cari conPair dengan hierarki paling awal, serta join node nya
+#         result = findTheClosestJoinNodeFromConcurrentPairWithItsDistance(conPair, allJoinNodes)
+#         distance = result[2]
+#         if distance < shortest:
+#             shortest = distance
+#             theClosestConPairHierarchy = conPair
+#             joinNode = result[1]
+#     return theClosestConPairHierarchy  # , joinNode # dapat pasangan conPair terdekat dan node join nya
 
 def entranceDetector(session, splitGW):
     q_getEntrancesOfAndSplit = '''

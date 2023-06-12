@@ -164,16 +164,16 @@ if __name__ == '__main__':
             if joinNode[2] == joinNodeName :
                 joinNode[2] = xorJoinGW_name
 
-    #
 
-    # for ANDjoin in joinANDList:
-    #     print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
-    #     andJoinGW_name = ANDjoin[0]
-    #     exitNodes = ANDjoin[1]
-    #     joinNodeName = ANDjoin[2]
-    #     discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
-    # #
-    # #
+
+    for ANDjoin in joinANDList:
+        print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
+        andJoinGW_name = ANDjoin[0]
+        exitNodes = ANDjoin[1]
+        joinNodeName = ANDjoin[2]
+        discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
+    #
+    #
     #
     #
 

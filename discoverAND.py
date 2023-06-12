@@ -1,4 +1,4 @@
-from helper import joinHelper, generalHelper
+from helper import joinHelper, generalHelper, blockHelper
 
 
 def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
@@ -84,28 +84,19 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
         # kalau ada tuple entrancePair yang beririsan maka gabungkan
         mergedEntrancePair = []
         for joinNode in joinNodeEnum:
-            entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-            merged_entrance_to_exit_pairs = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode, entrance_to_exit_pairs)
-        print('mergedEntrance_exit_pairs= ', merged_entrance_to_exit_pairs)
+            while True:
+                entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
+                finish, joinNodeEnum = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode,entrance_to_exit_pairs)
+                if finish:
+                    break
+        mergedJoinNodeEnum = joinNodeEnum
 
         # cek kalau ada joinNode bersama maka tidak perlu cek hierarki
         # TODO: cek apakah ada joinNode bersama
 
         # pick the minimal number of entrancesPairPaths --> KOREKSI
         # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
-
-        shortest = 1000
-        closestHirarchies = []
-        theJoinNode = ''
-        for joinNode in merged_entrance_to_exit_pairs:  # β
-            for entrance_to_exit_pairs in merged_entrance_to_exit_pairs[joinNode]:  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-                NumOfEntrances = len(entrance_to_exit_pairs[0])
-                if NumOfEntrances < shortest:
-                    shortest = NumOfEntrances
-                    closestHirarchies = [[entrance_to_exit_pairs, joinNode]]
-                elif NumOfEntrances == shortest:
-                    closestHirarchies.append([entrance_to_exit_pairs, joinNode])
-        print('closestHirarchy= ', closestHirarchies)
+        closestHirarchies = blockHelper.getTheClosestHierarchy(mergedJoinNodeEnum)
 
         for closestHirarchy in closestHirarchies:
             # insert split_AND_gw
@@ -172,7 +163,7 @@ def insertANDSplitGW(session, splitNodeName, conPair, counter):
         else:
             return None
 
-def insertANDJoinGW(self, session, exitNodes, andJoinGW_name, joinNodeName):
+def insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName):
     # Split detection
 
     q_andJoin = '''
