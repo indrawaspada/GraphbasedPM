@@ -125,7 +125,8 @@ if __name__ == '__main__':
     # Model DFG preparation
     clearAll()
     # constructDFFRefModel('file:///df_green.csv')
-    constructDFFRefModel('file:///df_red.csv')
+    # constructDFFRefModel('file:///df_red.csv')
+    constructDFFRefModel('file:///df_red_ok.csv')
     deleteTrace()
     splitJoinInit()
 
