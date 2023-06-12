@@ -88,6 +88,9 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
             merged_entrance_to_exit_pairs = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode, entrance_to_exit_pairs)
         print('mergedEntrance_exit_pairs= ', merged_entrance_to_exit_pairs)
 
+        # cek kalau ada joinNode bersama maka tidak perlu cek hierarki
+        # TODO: cek apakah ada joinNode bersama
+
         # pick the minimal number of entrancesPairPaths --> KOREKSI
         # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
 

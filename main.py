@@ -4,9 +4,10 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
 from neo4j import GraphDatabase
-from helper import joinHelper, splitHelper
+from helper import joinHelper, splitHelper, generalHelper
 import gpd
-from bulk import gateway
+import discoverXOR, discoverAND
+
 
 
 def print_hi(name):
@@ -131,22 +132,48 @@ if __name__ == '__main__':
     # Init variables
     counter = 0
     initialNodeName = 'START' # ganti dengan get initial node name
-    gpd = gpd.GraphbasedDiscovery(session, gateway)
-    gate = gateway.GateDiscovery(session)
+    gpd = gpd.GraphbasedDiscovery(session)
 
     GWlist, joinXORList, joinANDList = gpd.discoverGW(session, initialNodeName, counter)  # node split terdekat
     print('GWlist= ', GWlist, 'joinXORList= ', joinXORList, 'joinANDList= ', joinANDList)
     #
 
     # setelah split selesai, maka periksa JOIN untuk disisipkan
-    for ANDjoin in joinANDList:
-        print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
-        andJoinGW_name = ANDjoin[0]
-        exitNodes = ANDjoin[1]
-        joinNodeName = ANDjoin[2]
-        gate.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
+    for XORjoin in joinXORList:
+        print('XORjoin= ', XORjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
+        xorJoinGW_name = XORjoin[0]
+        exitNodes = XORjoin[1]
+        joinNodeName = XORjoin[2]
+
+        # check jika antara exitNode dan joinNode ada type node lain maka replace exitNode dg nodeLain terdekat
+        for exitNode in exitNodes:
+            pair = [exitNode, joinNodeName]
+            if generalHelper.sequence_detector(session, pair):
+                pass # aman, tidak ada node lain
+            else: # ada node lain
+                newExit = generalHelper.getTheDirectExitToJoinNode(session, exitNode, joinNodeName)
+                oldExit = exitNode
+                exitNodes.remove(oldExit)
+                exitNodes.append(newExit)
+
+
+        discoverXOR.insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName)
+
+        # setelah insert joinGW maka joinNodeName di joinXORList di replace dengan xorJoinGW_name
+        for joinNode in joinXORList:
+            if joinNode[2] == joinNodeName :
+                joinNode[2] = xorJoinGW_name
+
     #
-    #
+
+    # for ANDjoin in joinANDList:
+    #     print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
+    #     andJoinGW_name = ANDjoin[0]
+    #     exitNodes = ANDjoin[1]
+    #     joinNodeName = ANDjoin[2]
+    #     discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
+    # #
+    # #
     #
     #
 

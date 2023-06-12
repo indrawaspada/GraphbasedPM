@@ -4,7 +4,9 @@ from helper import generalHelper, joinHelper
 # 2. temukan hirarki
 # 3. deteksi join nya
 # 4. simpan data join dalam tabel
-def discoverXOR(session, t, S, C, F, counter, GWlist, joinXORgw):
+def discoverXOR(session, t, S, C, F, counter):
+    GWlist = []
+    joinXORgw = []
     print('t= ', t)
     X = set()  # concurrentPair
     # Check potensi konkurensi
@@ -37,7 +39,8 @@ def discoverXOR(session, t, S, C, F, counter, GWlist, joinXORgw):
         allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, S, C, F, list(X),
                                                                                                 allJoinNodes)
         if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
-            return S, C, F, counter, X, GWlist, joinXORgw
+            g = []
+            return S, C, F, counter, X, g, joinXORgw
 
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()
@@ -88,43 +91,68 @@ def discoverXOR(session, t, S, C, F, counter, GWlist, joinXORgw):
         joinNodeEnum = generalHelper.enumJoinNode(valid_blocks)
 
         # kalau ada tuple entrancePair yang beririsan maka gabungkan
-        mergedEntrancePair = []
+        # merged_entrance_to_exit_pairs = []
         for joinNode in joinNodeEnum:
-            entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-            merged_entrance_to_exit_pairs = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode,
-                                                                                entrance_to_exit_pairs)
-        print('mergedEntrance_exit_pairs= ', merged_entrance_to_exit_pairs)
+            while True:
+                entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
+                finish, joinNodeEnum = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode,entrance_to_exit_pairs)
+                if finish:
+                    break
+        mergedJoinNodeEnum = joinNodeEnum
+        # print('mergedEntrance_exit_pairs= ', merged_entrance_to_exit_pairs)
+
+        # cek kalau ada joinNode bersama maka tidak perlu cek hierarki
+        # cek jika semua node dalam S ada di entrances maka ada joinNode bersama
+        # TODO: cek apakah ada joinNode bersama
+        # sharedJoinNode = True
+        # for jn in merged_entrance_to_exit_pairs:
+        #     for s in S:
+        #         if s in merged_entrance_to_exit_pairs[jn][0]:
+        #             pass
+        #         else: # kalau ada yang tidak ada di S maka false
+        #             sharedJoinNode = False
+
+        # if not sharedJoinNode:
+        #     # check hierarchy
+        # else:
+        #     # insert split
 
         # pick the minimal number of entrancesPairPaths --> KOREKSI
         # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
-
-        smallestNumOfEntrances = 1000
-        smallerBlocks = []
-        theJoinNode = ''
-        for joinNode in merged_entrance_to_exit_pairs:  # β
-            for entrance_to_exit_pairs in merged_entrance_to_exit_pairs[joinNode]:  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-                NumOfEntrances = len(entrance_to_exit_pairs[0])
-                if NumOfEntrances < smallestNumOfEntrances:
-                    smallestNumOfEntrances = NumOfEntrances
-                    smallerBlocks = [[entrance_to_exit_pairs, joinNode]]
-                elif NumOfEntrances == smallestNumOfEntrances:
-                    smallerBlocks.append([entrance_to_exit_pairs, joinNode])
-        print('smallerBlocks= ', smallerBlocks)
-
-        # ambil jarak terdekat
-        for block in smallerBlocks:
-            # block
-            pass
+        # smallerBlocks = checkHierarchy(merged_entrance_to_exit_pairs)
 
 
-        for closestHirarchy in smallerBlocks:
-            SCP = list(closestHirarchy[0][0])# entrances
+        # smallestNumOfEntrances = 1000
+        # smallerBlocks = []
+        # theJoinNode = ''
+        # for joinNode in merged_entrance_to_exit_pairs:  # β
+        #     for entrance_to_exit_pairs in merged_entrance_to_exit_pairs[joinNode]:  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
+        #         NumOfEntrances = len(entrance_to_exit_pairs[0])
+        #         if NumOfEntrances < smallestNumOfEntrances:
+        #             smallestNumOfEntrances = NumOfEntrances
+        #             smallerBlocks = [[entrance_to_exit_pairs, joinNode]]
+        #         elif NumOfEntrances == smallestNumOfEntrances:
+        #             smallerBlocks.append([entrance_to_exit_pairs, joinNode])
+        # print('smallerBlocks= ', smallerBlocks)
+        #
+        # # ambil jarak terdekat
+        # for block in smallerBlocks:
+        #     # block
+        #     pass
+
+        for splitArea in mergedJoinNodeEnum[joinNode]:
+            SCP = list(splitArea[0])
             g = insertXORSplitGW(session, t, SCP, counter)
+
+        # for closestHirarchy in smallerBlocks:
+        #     SCP = list(closestHirarchy[0][0])# entrances
+        #     g = insertXORSplitGW(session, t, SCP, counter)
+
+
 
             # TODO: deteksi XOR-join
             # insert join_AND_gw
-            JCP = closestHirarchy[0][1]  # JCP = exits
-            joinNode = closestHirarchy[1]
+            JCP = splitArea[1]  # JCP = exits
             joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
 
             counter = counter + 1  # node number in a block counter
@@ -178,5 +206,32 @@ def insertXORSplitGW(session, splitNodeName, splitPairs, counter):
             for splitGWName in rec:
                 print(splitGWName)
                 return splitGWName
+        else:
+            return None
+
+def insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName):
+    # Split detection
+
+    q_andJoin = '''
+            MATCH (a:RefModel)-[r:DFG]->(n {Name:$joinNodeName})
+            WHERE a.Name in $exitNodes
+            MERGE (joinGW:GW:RefModel {Name:$xorJoinGW_name})-[s:DFG {rel:r.rel}]->(n)
+            WITH s, r, joinGW, a
+            MERGE (a)-[t:DFG {rel:r.rel, dff:r.dff}]->(joinGW)
+            // hapus r
+            DELETE r
+            SET t.join = True, joinGW.type = 'xorJoin', joinGW.join_gate = True
+            WITH s, sum(t.dff) as sum_t_dff, joinGW
+            SET s.dff = sum_t_dff
+            WITH joinGW
+            RETURN joinGW.Name
+            '''
+    records = session.run(q_andJoin, exitNodes=exitNodes, xorJoinGW_name=xorJoinGW_name, joinNodeName=joinNodeName)
+
+    for rec in records:
+        if rec is not None:
+            for joinGWName in rec:
+                print(joinGWName)
+                return joinGWName
         else:
             return None

@@ -177,3 +177,36 @@ def insertInvisibleTask(session, splitNodeName, joinNodeName):
                 return invTask
         else:
             return None
+
+def getTheDirectExitToJoinNode(session, exitNode, joinNodeName):
+    q_replaceWithDirectExitToJoinNode = '''
+        MATCH path = allshortestpaths((a {Name:$exitNode})-[r:DFG *..100]->(c:RefModel ))
+        WHERE c.Name = $joinNodeName
+        WITH c, path, [n in nodes(path)| n.Name] AS nnames
+        MATCH (b)-->(c)
+        WHERE b.Name in nnames
+        RETURN b.Name
+        '''
+    results = session.run(q_replaceWithDirectExitToJoinNode, exitNode=exitNode, joinNodeName=joinNodeName)
+
+    length = 0
+    for record in results:
+            exitNodeName = record[0]
+    return exitNodeName
+
+
+def checkHierarchy(merged_entrance_to_exit_pairs):
+    smallestNumOfEntrances = 1000
+    smallerBlocks = []
+    theJoinNode = ''
+    for joinNode in merged_entrance_to_exit_pairs:  # β
+        for entrance_to_exit_pairs in merged_entrance_to_exit_pairs[
+            joinNode]:  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
+            NumOfEntrances = len(entrance_to_exit_pairs[0])
+            if NumOfEntrances < smallestNumOfEntrances:
+                smallestNumOfEntrances = NumOfEntrances
+                smallerBlocks = [[entrance_to_exit_pairs, joinNode]]
+            elif NumOfEntrances == smallestNumOfEntrances:
+                smallerBlocks.append([entrance_to_exit_pairs, joinNode])
+    print('smallerBlocks= ', smallerBlocks)
+    return smallerBlocks

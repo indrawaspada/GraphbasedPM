@@ -6,7 +6,7 @@ import discoverXOR as disc_xor
 
 class GraphbasedDiscovery:
 
-    def __init__(self, session, gate):
+    def __init__(self, session):
         self.__session = session
         # self.__gw = gate.GateDiscovery(session)
 
@@ -24,7 +24,7 @@ class GraphbasedDiscovery:
             X = set()
             joinXORgw = []
             while True:
-                S, C, F, counter, X, gwList, joinXORgw  = disc_xor.discoverXOR(session, t, S, C, F, counter, GWlist, joinXORgw)
+                S, C, F, counter, X, gwList, joinXORgw  = disc_xor.discoverXOR(session, t, S, C, F, counter)
                 if len(X) < 1:
                     print('break')
                     break
