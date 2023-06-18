@@ -7,7 +7,7 @@ from helper import generalHelper, joinHelper, blockHelper
 def discoverXOR(session, t, S, C, F, counter):
     GWlist = []
     joinXORgw = []
-    print('t= ', t)
+    # print('t= ', t)
     X = set()  # concurrentPair
     # Check potensi konkurensi
     for s1 in S:
@@ -52,8 +52,8 @@ def discoverXOR(session, t, S, C, F, counter):
             joinNode = pathVariantsFromEntranceToExit[0][2]
 
             # dapat valid kandidat regions
-            allValidEntrancePairToJoinBlock = joinHelper.getValidEntrancesToJoinPaths(paths0,
-                                                                                      paths1)  # dapat path yg valid, bs lebih dari 1
+            allValidEntrancePairToJoinBlock = joinHelper.filterValidEntrancePairsToJoinBlocks(paths0,
+                                                                                              paths1)  # dapat path yg valid, bs lebih dari 1
             print('validEntranceCombPaths= ', allValidEntrancePairToJoinBlock)
 
             # jika ada validPaths
@@ -99,16 +99,16 @@ def discoverXOR(session, t, S, C, F, counter):
                 if finish:
                     break
         mergedJoinNodeEnum = joinNodeEnum
-        closestHirarchies = blockHelper.getTheClosestHierarchy(mergedJoinNodeEnum)
+        H = blockHelper.getTheNextHierarchies(mergedJoinNodeEnum)
 
-        for closestHirarchy in closestHirarchies:
+        for h in H:
             # insert split_AND_gw
-            SCP = list(closestHirarchy[0][0])  # SCP = entrances, bisa lebih dari 2
+            SCP = list(h[0][0])  # SCP = entrances, bisa lebih dari 2
             g = insertXORSplitGW(session, t, SCP, counter)
             print('g= ', g)
             # insert join_AND_gw
-            JCP = closestHirarchy[0][1]  # JCP = exits
-            joinNode = closestHirarchy[1]
+            JCP = h[0][1]  # JCP = exits
+            joinNode = h[1]
             joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
 
         # for splitArea in mergedJoinNodeEnum[joinNode]:

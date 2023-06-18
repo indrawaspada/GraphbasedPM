@@ -20,12 +20,13 @@ class GraphbasedDiscovery:
         while len(splitNodes) > 0: # ada splitNodes yang belum diperiksa
             t = splitHelper.closestSplitNode(session, initialNodeName, splitNodes)[1]  # t
             S, C, F = splitHelper.entranceScanner(session, t)
-            gwList = []
-
-            # Discover XOR
-            X = set()
-            joinXORgw = []
+            # gwList = []
+            #
+            # # Discover XOR
+            # X = set()
+            # joinXORgw = []
             while len(S)>1:
+                # discoverXORsplitJoin
                 while True:
                     S, C, F, counter, X, gwList, joinXORgw  = disc_xor.discoverXOR(session, t, S, C, F, counter)
                     if len(X) < 1:
@@ -38,7 +39,7 @@ class GraphbasedDiscovery:
                     if joinXORgw:
                         joinXORList.extend(joinXORgw)
 
-                # Discover AND
+                # discoverANDsplitJoin
                 joinANDgw = []
                 while True:
                     # meski ada penanganan shortcut mjd concurrent tp tdk perlu membuang data splitnode

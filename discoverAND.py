@@ -2,7 +2,9 @@ from helper import joinHelper, generalHelper, blockHelper
 
 
 def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
-    concurrentPair = []
+    # concurrentPair = []
+    GWlist = []
+    joinANDgw = []
     A = set()  # concurrentPair
     # Check potensi konkurensi
     for s1 in S:
@@ -30,6 +32,10 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
         # output:list of entrance-allPathVariantsTo-exit
         allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, S, C, F, list(A), allJoinNodes)
 
+        if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
+            g = []
+            return S, C, F, counter, X, g, joinANDgw
+
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()
         for pathVariantsFromEntranceToExit in allPathVariantsFromEntranceToExit:
@@ -41,8 +47,8 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
             joinNode = pathVariantsFromEntranceToExit[0][2]
 
             # dapat valid kandidat regions
-            allValidEntrancePairToJoinBlock = joinHelper.getValidEntrancesToJoinPaths(paths0,
-                                                                                      paths1)  # dapat path yg valid, bs lebih dari 1
+            allValidEntrancePairToJoinBlock = joinHelper.filterValidEntrancePairsToJoinBlocks(paths0,
+                                                                                              paths1)  # dapat path yg valid, bs lebih dari 1
             print('validEntranceCombPaths= ', allValidEntrancePairToJoinBlock)
 
             # jika ada validPaths
@@ -55,7 +61,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
                 # input: 2 region. Region = entrance node to exit node
                 # detect and handle a shorcut between 2 regions
                 # output: number of shorcut found
-                generalHelper.shortcutHandlerBetweenRegion(session, regionA, regionB)
+                generalHelper.shortcutHandlerBetweenRegion(session, regionA, regionB) # icr = incomplete concurrent relationship
 
                 exit = validEntrancePairToJoinBlock[2]  # [exit0,exit1]
                 if len(validEntrancePairToJoinBlock[0]) > 0:  # validEntrancesToJoinPath --> ada distance path nya
@@ -96,17 +102,17 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
 
         # pick the minimal number of entrancesPairPaths --> KOREKSI
         # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
-        closestHirarchies = blockHelper.getTheClosestHierarchy(mergedJoinNodeEnum)
+        H = blockHelper.getTheNextHierarchies(mergedJoinNodeEnum)
 
-        for closestHirarchy in closestHirarchies:
+        for h in H:
             # insert split_AND_gw
-            SCP = list(closestHirarchy[0][0])  # SCP = entrances, bisa lebih dari 2
+            SCP = list(h[0][0])  # SCP = entrances, bisa lebih dari 2
             g = insertANDSplitGW(session, t, SCP, counter)
             print('g= ', g)
 
             # insert join_AND_gw
-            JCP = closestHirarchy[0][1]  # JCP = exits
-            joinNode = closestHirarchy[1]
+            JCP = h[0][1]  # JCP = exits
+            joinNode = h[1]
             joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode])
 
             counter = counter + 1 # node number in a block counter
@@ -128,9 +134,6 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
                     F.pop(SCP[i])
                 S.append(g)  # tambahkan node gateway ke S
                 C[g] = Cu
-                # print('C= ', C)
-                # print('F= ', F)
-                # print('Fi= ', Fi)
                 F[g] = Fi
                 print('F= ', F)
         print('S: ', S)
