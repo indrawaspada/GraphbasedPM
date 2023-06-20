@@ -1,5 +1,12 @@
 
 def andSplit_bpmnToPetriNet(session):
+    q_andSplitDetect = '''
+        OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
+        WHERE x.type = 'andSplit'
+        RETURN x.Name
+    '''
+    result = session.run(q_andSplitDetect)
+
     q_andSplit_bpmnToPetriNet = '''
         OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
         WHERE x.type = 'andSplit'
@@ -11,9 +18,24 @@ def andSplit_bpmnToPetriNet(session):
         DELETE s
         RETURN null
     '''
-    session.run(q_andSplit_bpmnToPetriNet)
+    status = ''
+    for record in result:
+        print(record[0])
+        if record[0] is not None:
+            status = 'and_split_exist'
+    if status == 'and_split_exist':
+        session.run(q_andSplit_bpmnToPetriNet)
+
+
 
 def andJoin_bpmnToPetriNet(session):
+    q_andJoinDetect = '''
+        OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
+        WHERE x.type = 'andJoin'
+        RETURN x.Name
+    '''
+    result = session.run(q_andJoinDetect)
+
     q_andJoin_bpmnToPetriNet = '''
         OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
         WHERE x.type = 'andJoin'
@@ -25,9 +47,23 @@ def andJoin_bpmnToPetriNet(session):
         DELETE r
         RETURN null
     '''
-    session.run(q_andJoin_bpmnToPetriNet)
+    status = ''
+    for record in result:
+        print(record[0])
+        if record[0] is not None:
+            status = 'and_join_exist'
+    if status == 'and_join_exist':
+        session.run(q_andJoin_bpmnToPetriNet)
+
 
 def xorSplit_bpmnToPetriNet(session):
+    q_xorSplitDetect = '''
+        OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
+        WHERE x.type = 'xorSplit'
+        RETURN x.Name
+    '''
+    result = session.run(q_xorSplitDetect)
+
     q_xorSplit_bpmnToPetriNet = '''
         OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorSplit'
@@ -42,10 +78,23 @@ def xorSplit_bpmnToPetriNet(session):
         YIELD node
         RETURN null
     '''
-    session.run(q_xorSplit_bpmnToPetriNet)
+    status = ''
+    for record in result:
+        print(record[0])
+        if record[0] is not None:
+            status = 'xor_split_exist'
+    if status == 'xor_split_exist':
+        session.run(q_xorSplit_bpmnToPetriNet)
 
 
 def xorJoin_bpmnToPetriNet(session):
+    q_xorJoinDetect = '''
+        OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
+        WHERE x.type = 'xorJoin'
+        RETURN x.Name
+    '''
+    result = session.run(q_xorJoinDetect)
+
     q_xorJoin_bpmnToPetriNet = '''
         OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorJoin'
@@ -60,7 +109,14 @@ def xorJoin_bpmnToPetriNet(session):
         YIELD node
         RETURN null
     '''
-    session.run(q_xorJoin_bpmnToPetriNet)
+
+    status = ''
+    for record in result:
+        print(record[0])
+        if record[0] is not None:
+            status = 'xor_join_exist'
+    if status == 'xor_join_exist':
+        session.run(q_xorJoin_bpmnToPetriNet)
 
 def sequence_bpmnToPetrinet(session):
     q_sequenceAndANDPetrinet ='''
