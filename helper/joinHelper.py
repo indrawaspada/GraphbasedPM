@@ -129,7 +129,7 @@ def intersection(lst1, lst2):
         return False
 
 #     return lst3
-def getValidEntrancesToJoinPaths(paths0, paths1):  # entrance to exit
+def filterValidEntrancePairsToJoinBlocks(paths0, paths1):  # entrance to exit
     validEntrancesToJoinPaths = []
     # paths0  [['DISCHARGE', 'JOB_DEL'], ['DISCHARGE', 'STACK']]
     # paths1  [['DISCHARGE', 'JOB_DEL'], ['DISCHARGE', 'STACK']]

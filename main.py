@@ -6,7 +6,8 @@
 from neo4j import GraphDatabase
 from helper import joinHelper, splitHelper, generalHelper
 import gpd
-import discoverXOR, discoverAND
+import discoverXOR, discoverAND, saveToPnml
+from pm4py.objects.petri.petrinet import PetriNet, Marking
 
 
 
@@ -177,6 +178,16 @@ if __name__ == '__main__':
 
     # lengkapi antar split dan antar join dengan invisible task
     generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
+
+
+    petri_net = PetriNet("petri_net")
+    petri_net, petri_im, petri_fm = saveToPnml.saveToPnml(session, petri_net)
+
+    from pm4py.visualization.petrinet import visualizer as pn_vis_factory
+
+    gviz = pn_vis_factory.apply(petri_net, petri_im, petri_fm)
+    pn_vis_factory.view(gviz)
+
 
 
 

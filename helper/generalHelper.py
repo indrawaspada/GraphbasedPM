@@ -101,7 +101,7 @@ def getEntranceToJoinPath(session, entrance, joinNode):
     return paths, status
 
 
-def getAllPossiblePathsFromEntranceToExit(session, t, S, C, F, A, allJoinNodes):
+def getAllPathVariantsFromEntranceToExit(session, t, S, C, F, A, allJoinNodes):
     entrancePairList = combinationPairInList(list(A))
     allEntranceCombPaths = []
     for joinNode in allJoinNodes:
@@ -159,13 +159,17 @@ def insertInvisibleTask(session, splitNodeName, joinNodeName):
     q_insertInvisibleTask = '''
             MATCH (n {Name:$splitNodeName})-[r:DFG]->(a:RefModel)
             WHERE a.Name = $joinNodeName
-            MERGE (n)-[s:DFG {rel:r.rel}]->(invTask:RefModel {Name:"inv"+"_"+n.Name+"_"+a.Name})
+            MERGE (n)-[s:DFG {rel:r.rel}]->(invTask:Activity:RefModel {Name:"inv"+"_"+n.Name+"_"+a.Name})
             SET s.dff = r.dff
             WITH s, r, invTask, a
             MERGE (invTask)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
             // hapus r
             DELETE r
-            SET s.split = True, t.dff = s.dff, t.join = True, invTask.label= 'INVISIBLE'
+            SET 
+            s.split = True, 
+            t.dff = s.dff, 
+            t.join = True, 
+            invTask.label= 'Invisible'
             RETURN invTask.Name
             '''
     records = session.run(q_insertInvisibleTask, splitNodeName=splitNodeName, joinNodeName=joinNodeName)
@@ -215,13 +219,13 @@ def checkHierarchy(merged_entrance_to_exit_pairs):
 def insertInvisibleTaskBetweenConsecutiveGateway(session):
     q_insertInvisibleTaskBetweenConsecutiveGateway = '''
         MATCH (a:GW)-[r:DFG]->(c:GW)
-        MERGE (a)-[s:DFG {rel:r.rel}]->(invTask:RefModel {Name:"inv"+"_"+a.Name+"_"+c.Name})
+        MERGE (a)-[s:DFG {rel:r.rel}]->(invTask:Activity:RefModel {Name:"inv"+"_"+a.Name+"_"+c.Name})
         SET s.dff = r.dff
         WITH s, r, invTask, c
         MERGE (invTask)-[t:DFG {rel:r.rel, dff:r.dff}]->(c)
         // hapus r
         DELETE r
-        SET t.dff = s.dff, invTask.label= 'INVISIBLE'
+        SET t.dff = s.dff, invTask.label= 'Invisible'
         RETURN invTask.Name
 
         '''

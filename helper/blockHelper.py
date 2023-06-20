@@ -1,4 +1,4 @@
-def getTheClosestHierarchy(mergedJoinNodeEnum):
+def getTheNextHierarchies(mergedJoinNodeEnum):
     shortest = 1000
     closestHirarchies = []
     theJoinNode = ''

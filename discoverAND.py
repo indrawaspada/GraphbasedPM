@@ -30,7 +30,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
         # Get valid block from 2 entrances
         # input: list of entrances
         # output:list of entrance-allPathVariantsTo-exit
-        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPossiblePathsFromEntranceToExit(session, t, S, C, F, list(A), allJoinNodes)
+        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPathVariantsFromEntranceToExit(session, t, S, C, F, list(A), allJoinNodes)
 
         if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
             g = []
