@@ -127,7 +127,8 @@ if __name__ == '__main__':
     clearAll()
     # constructDFFRefModel('file:///df_green.csv')
     # constructDFFRefModel('file:///df_red.csv')
-    constructDFFRefModel('file:///df_red_ok.csv')
+    # constructDFFRefModel('file:///df_red_ok.csv')
+    constructDFFRefModel('file:///df_yellow.csv')
     deleteTrace()
     splitJoinInit()
 
@@ -157,7 +158,6 @@ if __name__ == '__main__':
                 oldExit = exitNode
                 exitNodes.remove(oldExit)
                 exitNodes.append(newExit)
-
 
         discoverXOR.insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName)
 

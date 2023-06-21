@@ -95,7 +95,7 @@ def discoverXOR(session, t, S, C, F, counter):
         for joinNode in joinNodeEnum:
             while True:
                 entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-                finish, joinNodeEnum = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode,entrance_to_exit_pairs)
+                finish, joinNodeEnum = joinHelper.mergeEntrance_exit_pairs(session, t, joinNodeEnum, joinNode,entrance_to_exit_pairs)
                 if finish:
                     break
         mergedJoinNodeEnum = joinNodeEnum

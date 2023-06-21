@@ -167,7 +167,7 @@ def mergePathPairs(listOfPathPairs):  # [ [ [path_pair],status, exit ], [...] ]
 # input: semua variasi pasangan entrance, dan pasangan exit
 # output: entrance, dan exit yang sudah di merge
 # cara merge, jika ada irisan
-def mergeEntrance_exit_pairs(joinNodeEnum, joinNode, entrance_to_exit_pairs):
+def mergeEntrance_exit_pairs(session, t, joinNodeEnum, joinNode, entrance_to_exit_pairs):
 #     nodeJoin = 'JOB_DEL'
 #     tuplePairs = [('CUSTOMS_DEL', 'VESSEL_ATB'), ('BAPLIE', 'CUSTOMS_DEL')]
 #     tuplePairs = entrance_exit_pairs
@@ -188,7 +188,6 @@ def mergeEntrance_exit_pairs(joinNodeEnum, joinNode, entrance_to_exit_pairs):
                 int_entr = intersection(entrance0,entrance1)
                 int_exit = intersection(exit0, exit1)
                 if int_entr and int_exit:
-                    finish = False # kalau masih ada yang di merge maka belum finish
                     mergedEntrances = tuple(set(entrance0 + entrance1))
                     mergedExits = list(set(exit0 + exit1))
                     if pair[0] in (joinNodeEnum[joinNode]):
@@ -196,8 +195,14 @@ def mergeEntrance_exit_pairs(joinNodeEnum, joinNode, entrance_to_exit_pairs):
                     if pair[1] in (joinNodeEnum[joinNode]):
                         joinNodeEnum[joinNode].remove(pair[1]) # # singkirkan pasangan yg di merge
                     # masukkan hasil merge
-                    if [mergedEntrances, mergedExits] not in joinNodeEnum[joinNode]:
-                        joinNodeEnum[joinNode].append([mergedEntrances, mergedExits])
+                    # Cek apakah hasil merge valid
+                    mergedEntranceStatus = generalHelper.isMergedEntranceValid(session, t, mergedEntrances)
+                    mergedExitStatus = generalHelper.isMergedExitValid(session, mergedExits, joinNode)
+                    if mergedEntranceStatus and mergedExitStatus:
+                        if [mergedEntrances, mergedExits] not in joinNodeEnum[joinNode]:
+                            joinNodeEnum[joinNode].append([mergedEntrances, mergedExits])
+                            finish = False  # kalau masih ada yang di merge maka belum finish
+
     else:
         pass
     # return joinNodeEnum # mergedJoinNodeEnum

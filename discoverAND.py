@@ -34,7 +34,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
 
         if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
             g = []
-            return S, C, F, counter, X, g, joinANDgw
+            return S, C, F, counter, A, GWlist, joinANDgw
 
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()

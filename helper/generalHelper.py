@@ -194,6 +194,7 @@ def getTheDirectExitToJoinNode(session, exitNode, joinNodeName):
     results = session.run(q_replaceWithDirectExitToJoinNode, exitNode=exitNode, joinNodeName=joinNodeName)
 
     length = 0
+    exitNodeName = None
     for record in results:
             exitNodeName = record[0]
     return exitNodeName
@@ -232,6 +233,74 @@ def insertInvisibleTaskBetweenConsecutiveGateway(session):
     results = session.run(q_insertInvisibleTaskBetweenConsecutiveGateway)
 
     length = 0
+    invTaskName = None
     for record in results:
         invTaskName = record[0]
     return invTaskName
+
+def entranceValidTest(session, t, a,b):
+    q_validTest = '''
+        OPTIONAL MATCH path = (t:RefModel {Name:$t})-[r:DFG *..100]->(a:RefModel {Name:$a})
+        with t, path, nodes(path) as ns
+        WHERE any(node IN ns WHERE (exists(node.Name) and node.Name = $b))
+        RETURN t.Name
+    
+    '''
+    result = session.run(q_validTest, t=t, a=a, b=b)
+    valid = True
+    for record in result:
+        for rec in record:
+            if rec[0] is not None: # jika ada pathnya berarti tidak valid
+                valid = False
+    return valid
+
+def isMergedEntranceValid(session, t, mergedEntrances):
+    isValid1 = False
+    isValid2 = False
+    status = False
+    all_comb_pairs = combinationPairInList(list(mergedEntrances))
+    # check apakah ada dari t ke entrance0 melewati entrance1
+    for pair in all_comb_pairs:
+        a = pair[0]
+        b = pair[1]
+        isValid1 = entranceValidTest(session, t, a, b)
+        isValid2 = entranceValidTest(session, t, b, a)
+        status = isValid1 or isValid2
+        if status:
+            break
+    return status
+
+
+def exitValidTest(session, a, b, u):
+    q_validTest = '''
+        OPTIONAL MATCH path = (a:RefModel {Name:$a})-[r:DFG *..100]->(u:RefModel {Name:$u})
+        with u, path, nodes(path) as ns
+        WHERE any(node IN ns WHERE (exists(node.Name) and node.Name = $b))
+        RETURN u.Name
+
+    '''
+    result = session.run(q_validTest, a=a, b=b, u=u)
+    valid = True
+    for record in result:
+        for rec in record:
+            if rec[0] is not None:  # jika ada pathnya berarti tidak valid
+                valid = False
+    return valid
+
+def isMergedExitValid(session, mergedExits, u):
+    isValid1 = False
+    isValid2 = False
+    status = False
+    all_comb_pairs = combinationPairInList(mergedExits)
+    # check apakah ada dari t ke entrance0 melewati entrance1
+    for pair in all_comb_pairs:
+        a = pair[0]
+        b = pair[1]
+        isValid1 = exitValidTest(session, a, b, u)
+        isValid2 = exitValidTest(session, b, a, u)
+        status = isValid1 or isValid2
+        if status:
+            break
+    return status
+
+
