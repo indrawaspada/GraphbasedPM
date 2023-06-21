@@ -1,14 +1,14 @@
 
 def andSplit_bpmnToPetriNet(session):
-    q_andSplitDetect = '''
-        OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
-        WHERE x.type = 'andSplit'
-        RETURN x.Name
-    '''
-    result = session.run(q_andSplitDetect)
+    # q_andSplitDetect = '''
+    #     OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
+    #     WHERE x.type = 'andSplit'
+    #     RETURN x.Name
+    # '''
+    # result = session.run(q_andSplitDetect)
 
     q_andSplit_bpmnToPetriNet = '''
-        OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
+        MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
         WHERE x.type = 'andSplit'
         SET x.type = 'activity', x.label = 'Invisible'
         WITH a,x,b,r,s
@@ -18,26 +18,27 @@ def andSplit_bpmnToPetriNet(session):
         DELETE s
         RETURN null
     '''
-    status = ''
-    for record in result:
-        print(record[0])
-        if record[0] is not None:
-            status = 'and_split_exist'
-    if status == 'and_split_exist':
-        session.run(q_andSplit_bpmnToPetriNet)
+    session.run(q_andSplit_bpmnToPetriNet)
+    # status = ''
+    # for record in result:
+    #     print(record[0])
+    #     if record[0] is not None:
+    #         status = 'and_split_exist'
+    # if status == 'and_split_exist':
+    #     session.run(q_andSplit_bpmnToPetriNet)
 
 
 
 def andJoin_bpmnToPetriNet(session):
-    q_andJoinDetect = '''
-        OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
-        WHERE x.type = 'andJoin'
-        RETURN x.Name
-    '''
-    result = session.run(q_andJoinDetect)
+    # q_andJoinDetect = '''
+    #     OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
+    #     WHERE x.type = 'andJoin'
+    #     RETURN x.Name
+    # '''
+    # result = session.run(q_andJoinDetect)
 
     q_andJoin_bpmnToPetriNet = '''
-        OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
+        MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
         WHERE x.type = 'andJoin'
         SET x.type = 'activity', x.label = 'Invisible'
         WITH a,x,b,r,s
@@ -47,25 +48,27 @@ def andJoin_bpmnToPetriNet(session):
         DELETE r
         RETURN null
     '''
-    status = ''
-    for record in result:
-        print(record[0])
-        if record[0] is not None:
-            status = 'and_join_exist'
-    if status == 'and_join_exist':
-        session.run(q_andJoin_bpmnToPetriNet)
+
+    session.run(q_andJoin_bpmnToPetriNet)
+    # status = ''
+    # for record in result:
+    #     print(record[0])
+    #     if record[0] is not None:
+    #         status = 'and_join_exist'
+    # if status == 'and_join_exist':
+    #     session.run(q_andJoin_bpmnToPetriNet)
 
 
 def xorSplit_bpmnToPetriNet(session):
-    q_xorSplitDetect = '''
-        OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
-        WHERE x.type = 'xorSplit'
-        RETURN x.Name
-    '''
-    result = session.run(q_xorSplitDetect)
+    # q_xorSplitDetect = '''
+    #     OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
+    #     WHERE x.type = 'xorSplit'
+    #     RETURN x.Name
+    # '''
+    # result = session.run(q_xorSplitDetect)
 
     q_xorSplit_bpmnToPetriNet = '''
-        OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
+        MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorSplit'
         WITH a,x,b,r,s
         CREATE (p:Place {Name: 'p_'+a.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
@@ -78,25 +81,26 @@ def xorSplit_bpmnToPetriNet(session):
         YIELD node
         RETURN null
     '''
-    status = ''
-    for record in result:
-        print(record[0])
-        if record[0] is not None:
-            status = 'xor_split_exist'
-    if status == 'xor_split_exist':
-        session.run(q_xorSplit_bpmnToPetriNet)
+    # status = ''
+    # for record in result:
+    #     print(record[0])
+    #     if record[0] is not None:
+    #         status = 'xor_split_exist'
+    # if status == 'xor_split_exist':
+    #     session.run(q_xorSplit_bpmnToPetriNet)
 
+    session.run(q_xorSplit_bpmnToPetriNet)
 
 def xorJoin_bpmnToPetriNet(session):
-    q_xorJoinDetect = '''
-        OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
-        WHERE x.type = 'xorJoin'
-        RETURN x.Name
-    '''
-    result = session.run(q_xorJoinDetect)
+    # q_xorJoinDetect = '''
+    #     OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
+    #     WHERE x.type = 'xorJoin'
+    #     RETURN x.Name
+    # '''
+    # result = session.run(q_xorJoinDetect)
 
     q_xorJoin_bpmnToPetriNet = '''
-        OPTIONAL MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
+        MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorJoin'
         WITH a,x,b,r,s
         CREATE (p:Place {Name: 'p_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
@@ -109,14 +113,14 @@ def xorJoin_bpmnToPetriNet(session):
         YIELD node
         RETURN null
     '''
-
-    status = ''
-    for record in result:
-        print(record[0])
-        if record[0] is not None:
-            status = 'xor_join_exist'
-    if status == 'xor_join_exist':
-        session.run(q_xorJoin_bpmnToPetriNet)
+    session.run(q_xorJoin_bpmnToPetriNet)
+    # status = ''
+    # for record in result:
+    #     print(record[0])
+    #     if record[0] is not None:
+    #         status = 'xor_join_exist'
+    # if status == 'xor_join_exist':
+    #     session.run(q_xorJoin_bpmnToPetriNet)
 
 def sequence_bpmnToPetrinet(session):
     q_sequenceAndANDPetrinet ='''
