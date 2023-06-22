@@ -298,9 +298,20 @@ def isMergedExitValid(session, mergedExits, u):
         b = pair[1]
         isValid1 = exitValidTest(session, a, b, u)
         isValid2 = exitValidTest(session, b, a, u)
-        status = isValid1 or isValid2
+        status = isValid1 and isValid2
         if status:
             break
     return status
+
+def mergeSameGwInSequence(session):
+    q_mergeSameGwInSequence = '''
+        MATCH (g:GW)-[r]->(l:GW)
+        WHERE l.i_degree < 2 and g.type = l.type and (NOT (g.i_degree > 1 or l.o_degree > 1))
+        DELETE r
+        WITH g, l
+        call apoc.refactor.mergeNodes([g,l]) YIELD node
+        RETURN node
+    '''
+    session.run(q_mergeSameGwInSequence)
 
 

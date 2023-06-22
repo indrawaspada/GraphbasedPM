@@ -190,15 +190,15 @@ def mergeEntrance_exit_pairs(session, t, joinNodeEnum, joinNode, entrance_to_exi
                 if int_entr and int_exit:
                     mergedEntrances = tuple(set(entrance0 + entrance1))
                     mergedExits = list(set(exit0 + exit1))
-                    if pair[0] in (joinNodeEnum[joinNode]):
-                        joinNodeEnum[joinNode].remove(pair[0]) # singkirkan pasangan yg di merge
-                    if pair[1] in (joinNodeEnum[joinNode]):
-                        joinNodeEnum[joinNode].remove(pair[1]) # # singkirkan pasangan yg di merge
                     # masukkan hasil merge
                     # Cek apakah hasil merge valid
                     mergedEntranceStatus = generalHelper.isMergedEntranceValid(session, t, mergedEntrances)
                     mergedExitStatus = generalHelper.isMergedExitValid(session, mergedExits, joinNode)
                     if mergedEntranceStatus and mergedExitStatus:
+                        if pair[0] in (joinNodeEnum[joinNode]):
+                            joinNodeEnum[joinNode].remove(pair[0])  # singkirkan pasangan yg di merge
+                        if pair[1] in (joinNodeEnum[joinNode]):
+                            joinNodeEnum[joinNode].remove(pair[1])  # # singkirkan pasangan yg di merge
                         if [mergedEntrances, mergedExits] not in joinNodeEnum[joinNode]:
                             joinNodeEnum[joinNode].append([mergedEntrances, mergedExits])
                             finish = False  # kalau masih ada yang di merge maka belum finish

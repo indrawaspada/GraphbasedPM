@@ -92,7 +92,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
         for joinNode in joinNodeEnum:
             while True:
                 entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-                finish, joinNodeEnum = joinHelper.mergeEntrance_exit_pairs(joinNodeEnum, joinNode,entrance_to_exit_pairs)
+                finish, joinNodeEnum = joinHelper.mergeEntrance_exit_pairs(session, t, joinNodeEnum, joinNode,entrance_to_exit_pairs)
                 if finish:
                     break
         mergedJoinNodeEnum = joinNodeEnum
@@ -110,12 +110,11 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
             g = insertANDSplitGW(session, t, SCP, counter)
             print('g= ', g)
 
-            # insert join_AND_gw
-            JCP = h[0][1]  # JCP = exits
-            joinNode = h[1]
-            joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode])
+            # # insert join_AND_gw
+            # JCP = h[0][1]  # JCP = exits
+            # joinNode = h[1]
+            # joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode])
 
-            counter = counter + 1 # node number in a block counter
 
             SCPLen = len(SCP)  # ['BAPLIE', 'VESSEL_ATB']
             if g is not None:
@@ -136,6 +135,14 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
                 C[g] = Cu
                 F[g] = Fi
                 print('F= ', F)
+
+        for h in H:
+            # insert join_AND_gw
+            JCP = h[0][1]  # JCP = exits
+            joinNode = h[1]
+            joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode])
+            counter = counter + 1  # node number in a block counter
+
         print('S: ', S)
     return S, C, F, counter, A, GWlist, joinANDgw  # selama masih ditemukan konkuren (A>0) perlu diulang
 

@@ -125,10 +125,10 @@ if __name__ == '__main__':
 
     # Model DFG preparation
     clearAll()
-    # constructDFFRefModel('file:///df_green.csv')
-    # constructDFFRefModel('file:///df_red.csv')
-    # constructDFFRefModel('file:///df_red_ok.csv')
-    constructDFFRefModel('file:///df_yellow.csv')
+    # constructDFFRefModel('file:///df_green.csv') # AND
+    # constructDFFRefModel('file:///df_red.csv') # XOR
+    constructDFFRefModel('file:///df_red_ok.csv') # XOR AND
+    # constructDFFRefModel('file:///df_yellow.csv')
     deleteTrace()
     splitJoinInit()
 
@@ -149,15 +149,20 @@ if __name__ == '__main__':
         joinNodeName = XORjoin[2]
 
         # check jika antara exitNode dan joinNode ada type node lain maka replace exitNode dg nodeLain terdekat
-        for exitNode in exitNodes:
-            pair = [exitNode, joinNodeName]
-            if generalHelper.sequence_detector(session, pair):
-                pass # aman, tidak ada node lain
-            else: # ada node lain
-                newExit = generalHelper.getTheDirectExitToJoinNode(session, exitNode, joinNodeName)
-                oldExit = exitNode
-                exitNodes.remove(oldExit)
-                exitNodes.append(newExit)
+        while True:
+            finish = True
+            for exitNode in exitNodes:
+                pair = [exitNode, joinNodeName]
+                if generalHelper.sequence_detector(session, pair):
+                    pass # aman, tidak ada node lain
+                else: # ada node lain
+                    newExit = generalHelper.getTheDirectExitToJoinNode(session, exitNode, joinNodeName)
+                    oldExit = exitNode
+                    exitNodes.remove(oldExit)
+                    exitNodes.append(newExit)
+                    finish = False
+            if finish == True:
+                break
 
         discoverXOR.insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName)
 
@@ -175,6 +180,11 @@ if __name__ == '__main__':
         joinNodeName = ANDjoin[2]
         discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
 
+
+    splitHelper.setOutDegreeInNodes(session)
+    joinHelper.setInDegreeInNodes(session)
+    # sekuens gateway dengan tipe sama dilebur
+    generalHelper.mergeSameGwInSequence(session) # merge yang bukan hierarki
 
     # lengkapi antar split dan antar join dengan invisible task
     generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
