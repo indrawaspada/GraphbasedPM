@@ -306,12 +306,25 @@ def isMergedExitValid(session, mergedExits, u):
 def mergeSameGwInSequence(session):
     q_mergeSameGwInSequence = '''
         MATCH (g:GW)-[r]->(l:GW)
-        WHERE l.i_degree < 2 and g.type = l.type and (NOT (g.i_degree > 1 or l.o_degree > 1))
+        WHERE l.i_degree < 2 and g.type = l.type and (NOT (g.o_degree > 1 and l.o_degree > 1))
         DELETE r
         WITH g, l
         call apoc.refactor.mergeNodes([g,l]) YIELD node
         RETURN node
     '''
-    session.run(q_mergeSameGwInSequence)
+    results = session.run(q_mergeSameGwInSequence)
+    result = False
+    for record in results:
+        print(record[0])
+        print("record[0]['Name']= ", record[0]['Name'])
+        if record[0]['Name'] is not None:  # jika ada pathnya berarti tidak valid
+            result = True
+            break
 
+        # for rec in record:
+        #     print(rec)
+        #     if rec[0] is None:  # jika ada pathnya berarti tidak valid
+        #         print(rec[0])
+        #         result = False
+    return result
 

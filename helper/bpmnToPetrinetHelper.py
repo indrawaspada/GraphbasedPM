@@ -12,7 +12,7 @@ def andSplit_bpmnToPetriNet(session):
         WHERE x.type = 'andSplit'
         SET x.type = 'activity', x.label = 'Invisible'
         WITH a,x,b,r,s
-        CREATE (p:Place {Name: 'p_'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+        CREATE (p:Place {Name: 'p_split'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
         MERGE (x)-[t:Arc]->(p)-[u:Arc]->(b)
         SET t.dff = r.dff, u.dff = s.dff 
         DELETE s
@@ -42,7 +42,7 @@ def andJoin_bpmnToPetriNet(session):
         WHERE x.type = 'andJoin'
         SET x.type = 'activity', x.label = 'Invisible'
         WITH a,x,b,r,s
-        CREATE (p:Place {Name: 'p_'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+        CREATE (p:Place {Name: 'p_join'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
         MERGE (a)-[t:Arc]->(p)-[u:Arc]->(x)
         SET t.dff = r.dff, u.dff = s.dff 
         DELETE r
@@ -71,7 +71,7 @@ def xorSplit_bpmnToPetriNet(session):
         MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorSplit'
         WITH a,x,b,r,s
-        CREATE (p:Place {Name: 'p_'+a.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+        CREATE (p:Place {Name: 'p_split'+a.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
         MERGE (a)-[t:Arc]->(p)-[u:Arc]->(b)
         SET t.dff = r.dff, u.dff = s.dff 
         WITH DISTINCT x, a, p
@@ -103,7 +103,7 @@ def xorJoin_bpmnToPetriNet(session):
         MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorJoin'
         WITH a,x,b,r,s
-        CREATE (p:Place {Name: 'p_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+        CREATE (p:Place {Name: 'p_join'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
         MERGE (a)-[t:Arc]->(p)-[u:Arc]->(b)
         SET t.dff = r.dff, u.dff = s.dff 
         WITH DISTINCT x, p, b

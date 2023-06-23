@@ -184,7 +184,11 @@ if __name__ == '__main__':
     splitHelper.setOutDegreeInNodes(session)
     joinHelper.setInDegreeInNodes(session)
     # sekuens gateway dengan tipe sama dilebur
-    generalHelper.mergeSameGwInSequence(session) # merge yang bukan hierarki
+    while True:
+        result = True
+        result = generalHelper.mergeSameGwInSequence(session) # merge yang bukan hierarki
+        if result == False:
+            break
 
     # lengkapi antar split dan antar join dengan invisible task
     generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)

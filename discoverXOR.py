@@ -26,7 +26,6 @@ def discoverXOR(session, t, S, C, F, counter):
             X.add(s1)
             break  # dikerjakan satu gateway dulu (yg F nya sama)
 
-    # cari:
 
     if len(X) > 0:
         print('=========== ditemukan XOR split nodes ===============')
@@ -51,7 +50,7 @@ def discoverXOR(session, t, S, C, F, counter):
             paths1 = pathVariantsFromEntranceToExit[1][1]
             joinNode = pathVariantsFromEntranceToExit[0][2]
 
-            # dapat valid kandidat regions
+            # dapat  kandidat valid block!
             allValidEntrancePairToJoinBlock = joinHelper.filterValidEntrancePairsToJoinBlocks(paths0,
                                                                                               paths1)  # dapat path yg valid, bs lebih dari 1
             print('validEntranceCombPaths= ', allValidEntrancePairToJoinBlock)
@@ -104,37 +103,11 @@ def discoverXOR(session, t, S, C, F, counter):
         # H = semua blok dengan hierarki split sama, jadi buat insert splitgw 1x saja
         # split 1x langsung eksekusi, join nx sampai habis catat dulu eksekusi nanti
         #
-        SCP = []
-        # for h in H:
-        #     # insert split_AND_gw
-        #     SCP = list(h[0][0])  # SCP = entrances, bisa lebih dari 2
-        #     g = insertXORSplitGW(session, t, SCP, counter)
-        #     print('g= ', g)
-        #     counter = counter + 1  # node number in a block counter
-        #     break # insert split sekali saja
 
-        insertSplitOnce = True
         for h in H:
             # # insert split_AND_gw
             SCP = list(h[0][0])  # SCP = entrances, bisa lebih dari 2
             g = insertXORSplitGW(session, t, SCP, counter)
-
-            # print('g= ', g)
-            # # insert join_AND_gw
-            # JCP = h[0][1]  # JCP = exits
-            # joinNode = h[1]
-            # joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
-
-        # for splitArea in mergedJoinNodeEnum[joinNode]:
-        #     SCP = list(splitArea[0])
-        #     g = insertXORSplitGW(session, t, SCP, counter)
-
-
-            # # TODO: deteksi XOR-join
-            # # insert join_AND_gw
-            # JCP = splitArea[1]  # JCP = exits
-            # joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
-
 
             SCPLen = len(SCP)  # ['BAPLIE', 'VESSEL_ATB']
             if g is not None:
@@ -169,6 +142,33 @@ def discoverXOR(session, t, S, C, F, counter):
 
         print('S: ', S)
     return S, C, F, counter, X, GWlist, joinXORgw
+
+# def insertXORSplitGW(session, splitNodeName, splitPairs, counter):
+#     # Split detection
+#
+#     q_split = '''
+#             MATCH (n {Name:$splitNodeName})-[r:DFG]->(a:RefModel)
+#             WHERE a.Name in $splitPairs
+#             MERGE (n)-[s:DFG {rel:r.rel}]->(splitGW:GW:RefModel {Name:"XORSplitGW"+"_"+$counter})
+#             WITH s, r, splitGW, a
+#             MERGE (splitGW)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
+#             // hapus r
+#             DELETE r
+#             SET t.split = True, splitGW.type= 'xorSplit', splitGW.split_gate = True
+#             WITh s, sum(t.dff) as sum_t_dff, splitGW
+#             SET s.dff = sum_t_dff
+#             WITH splitGW
+#             RETURN splitGW.Name
+#             '''
+#     records = session.run(q_split, splitNodeName=splitNodeName, splitPairs=splitPairs, counter=counter)
+#
+#     for rec in records:
+#         if rec is not None:
+#             for splitGWName in rec:
+#                 print(splitGWName)
+#                 return splitGWName
+#         else:
+#             return None
 
 def insertXORSplitGW(session, splitNodeName, splitPairs, counter):
     # Split detection
