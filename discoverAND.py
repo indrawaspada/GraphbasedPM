@@ -1,6 +1,7 @@
 from helper import joinHelper, generalHelper, blockHelper
 
 
+# kuncinya menemukan AND-split, sedangkan AND-join diputuskan berdasarkan blok yang ditemukan
 def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
     # concurrentPair = []
     GWlist = []

@@ -209,4 +209,16 @@ def mergeEntrance_exit_pairs(session, t, joinNodeEnum, joinNode, entrance_to_exi
     return finish, joinNodeEnum
 
 
+def detectLoopJoin(session):
+    q_insertOR = '''
+        MATCH (a)-->(b:RefModel)
+        WHERE b.i_degree > 1 and NOT (b:GW) 
+        return [collect(a.Name),b.Name]
 
+        '''
+    results = session.run(q_insertOR)
+
+    result = []
+    for record in results:
+        result.append(record[0])
+    return result

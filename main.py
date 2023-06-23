@@ -127,10 +127,11 @@ if __name__ == '__main__':
     clearAll()
     # constructDFFRefModel('file:///df_green.csv') # AND
     # constructDFFRefModel('file:///df_red.csv') # XOR
-    constructDFFRefModel('file:///df_red_ok.csv') # XOR AND
-    # constructDFFRefModel('file:///df_yellow.csv')
+    # constructDFFRefModel('file:///df_red_ok.csv') # XOR AND
+    constructDFFRefModel('file:///df_yellow.csv')
     deleteTrace()
     splitJoinInit()
+    mainCounter = 0
 
     # Init variables
     counter = 0
@@ -193,6 +194,18 @@ if __name__ == '__main__':
     # lengkapi antar split dan antar join dengan invisible task
     generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
 
+    # pola join yang belum punya gateway diberi gerbang OR
+    result = joinHelper.detectLoopJoin(session)
+    for loopjoin in result:
+        exits = loopjoin[0]
+        joinNodeName = loopjoin[1]
+        mainCounter = mainCounter + 1
+        discoverXOR.insertXORJoinGW(session,exits,"xorLoopJoinGW_" + str(mainCounter), joinNodeName)
+
+    splitHelper.setOutDegreeInNodes(session)
+    joinHelper.setInDegreeInNodes(session)
+    # lengkapi antar split dan antar join dengan invisible task
+    generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
 
     petri_net = PetriNet("petri_net")
     petri_net, petri_im, petri_fm = saveToPnml.saveToPnml(session, petri_net)
