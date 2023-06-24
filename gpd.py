@@ -12,6 +12,7 @@ class GraphbasedDiscovery:
     def discoverGW(self, session, initialNodeName, counter):
         T = splitHelper.getAllSplitNodes(session)
         GWlist = []
+        gwList = []
         joinXORList = []
         joinANDList = []
         # t = splitHelper.closestSplitNode(session, initialNodeName, T)[1]  # t
@@ -20,17 +21,6 @@ class GraphbasedDiscovery:
             t = splitHelper.closestSplitNode(session, initialNodeName, T)[1]  # t
             S, C, F = splitHelper.entranceScanner(session, t)
             while len(S)>1:
-                # discoverXORsplitJoin
-                while True:
-                    S, C, F, counter, X, gwList, joinXORgw  = disc_xor.discoverXOR(session, t, S, C, F, counter)
-                    if len(X) < 1:
-                        print('break')
-                        break
-
-                    if len(gwList) > 0:
-                        GWlist.append(gwList)
-                    if joinXORgw:
-                        joinXORList.extend(joinXORgw)
 
                 # discoverANDsplitJoin
                 joinANDgw = []
@@ -45,6 +35,18 @@ class GraphbasedDiscovery:
                         GWlist.append(gwList)
                     if joinANDgw:
                         joinANDList.extend(joinANDgw)
+
+                # discoverXORsplitJoin
+                while True:
+                    S, C, F, counter, X, gwList, joinXORgw  = disc_xor.discoverXOR(session, t, S, C, F, counter)
+                    if len(X) < 1:
+                        print('break')
+                        break
+
+                    if len(gwList) > 0:
+                        GWlist.append(gwList)
+                    if joinXORgw:
+                        joinXORList.extend(joinXORgw)
 
                 S, C, F = splitHelper.entranceScanner(session, t)
 

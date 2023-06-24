@@ -64,7 +64,7 @@ def incompleteConcurrentHandler(session, shorcutPair):
     return None
 
 
-def shortcutHandlerBetweenRegion(session, regionA, regionB):
+def ICRHandlerBetweenRegion(session, regionA, regionB):
     shortcut = 0
     comb_nodes = pairCombBetweenLists(regionA, regionB)
     for pair in comb_nodes:
@@ -77,7 +77,7 @@ def shortcutHandlerBetweenRegion(session, regionA, regionB):
     return shortcut
 
 # [['BAPLIE', 'DISCHARGE', 'JOB_DEL'], ['BAPLIE', 'DISCHARGE', 'STACK']]
-def getEntranceToJoinPath(session, entrance, joinNode):
+def getEntranceToExitPath(session, entrance, joinNode):
     q_findJoinPath = '''
         //OPTIONAL MATCH (q)-[:DFG]->(y {Name:$joinNode})
         //WITH q
@@ -101,8 +101,8 @@ def getEntranceToJoinPath(session, entrance, joinNode):
     return paths, status
 
 
-def getAllPathVariantsFromEntranceToExit(session, t, S, C, F, A, allJoinNodes):
-    entrancePairList = combinationPairInList(list(A))
+def getAllXORPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes):
+    entrancePairList = combinationPairInList(list(E))
     allEntranceCombPaths = []
     for joinNode in allJoinNodes:
         for entrancePair in entrancePairList:
@@ -119,17 +119,10 @@ def getAllPathVariantsFromEntranceToExit(session, t, S, C, F, A, allJoinNodes):
                     allEntranceCombPaths = []
                     return allEntranceCombPaths, S, C, F
 
-                    # tambahkan ke S
-                    # S.remove(joinNode)
-                    # S.append(entrance)
-                    # C[entrance] = {entrance}
-                    # C.pop(joinNode)
-                    # F[entrance] = {entrance}
-                    # F.pop(joinNode)
-
-                    # print('status insert invisible task = ', status)
-
-                paths = getEntranceToJoinPath(session, entrance, joinNode)
+                # if entrance == joinNode:
+                #     entrancePairPaths.append([t,[[]],joinNode])
+                # else:
+                paths = getEntranceToExitPath(session, entrance, joinNode)
                 if paths[1] == 'Exist':
                     entrancePairPaths.append([entrance, paths[0], joinNode])
                 else:
@@ -137,7 +130,40 @@ def getAllPathVariantsFromEntranceToExit(session, t, S, C, F, A, allJoinNodes):
                     break
             if len(entrancePairPaths) > 0:
                 allEntranceCombPaths.append(entrancePairPaths)
-    
+
+    return allEntranceCombPaths, S, C, F
+
+def getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes):
+    entrancePairList = combinationPairInList(list(E))
+    allEntranceCombPaths = []
+    for entrancePair in entrancePairList:
+        for joinNode in allJoinNodes:
+            # print('entrancePair====: ', entrancePair)
+            entrancePairPaths = []
+            for entrance in entrancePair:  # tiap entrance dalam entrance pair
+
+                # cek jika entrance = joinNode maka sisipkan invisible task
+                if entrance == joinNode:
+                    # # insert invisible task between splitNode and joinNode
+                    # entrance = insertInvisibleTask(session,t, joinNode)
+                    #
+                    # S, C, F = splitHelper.entranceScanner(session, t)
+                    # allEntranceCombPaths = []
+                    # return allEntranceCombPaths, S, C, F
+                    break
+
+                # if entrance == joinNode:
+                #     entrancePairPaths.append([t,[[]],joinNode])
+                # else:
+                paths = getEntranceToExitPath(session, entrance, joinNode)
+                if paths[1] == 'Exist':
+                    entrancePairPaths.append([entrance, paths[0], joinNode])
+                else:
+                    entrancePairPaths = []
+                    break
+            if len(entrancePairPaths) > 0:
+                allEntranceCombPaths.append(entrancePairPaths)
+
     return allEntranceCombPaths, S, C, F
 
 def enumJoinNode(valid_blocks):

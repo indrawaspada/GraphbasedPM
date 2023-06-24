@@ -128,7 +128,8 @@ if __name__ == '__main__':
     # constructDFFRefModel('file:///df_green.csv') # AND
     # constructDFFRefModel('file:///df_red.csv') # XOR
     # constructDFFRefModel('file:///df_red_ok.csv') # XOR AND
-    constructDFFRefModel('file:///df_yellow.csv')
+    # constructDFFRefModel('file:///df_yellow.csv')
+    constructDFFRefModel('file:///df_yellow_f10.csv')
     deleteTrace()
     splitJoinInit()
     mainCounter = 0
@@ -173,7 +174,7 @@ if __name__ == '__main__':
                 joinNode[2] = xorJoinGW_name
 
 
-
+    # insert AND-join
     for ANDjoin in joinANDList:
         print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
         andJoinGW_name = ANDjoin[0]
@@ -192,7 +193,7 @@ if __name__ == '__main__':
             break
 
     # lengkapi antar split dan antar join dengan invisible task
-    generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
+    # generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
 
     # pola join yang belum punya gateway diberi gerbang OR
     result = joinHelper.detectLoopJoin(session)

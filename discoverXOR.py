@@ -35,9 +35,11 @@ def discoverXOR(session, t, S, C, F, counter):
         # Get valid block from 2 entrances
         # input: list of entrances
         # output:list of entrance-allPathVariantsTo-exit
-        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPathVariantsFromEntranceToExit(session, t, S, C, F, list(X),
+        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllXORPathVariantsFromEntranceToExit(session, t, S, C, F, list(X),
                                                                                                         allJoinNodes)
-        if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
+        # berarti ada insert invisible task
+        # atau not valid join node (potensi ICR)
+        if len(allPathVariantsFromEntranceToExit) == 0:
             g = []
             return S, C, F, counter, X, g, joinXORgw
 

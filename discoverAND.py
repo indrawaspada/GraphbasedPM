@@ -31,7 +31,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
         # Get valid block from 2 entrances
         # input: list of entrances
         # output:list of entrance-allPathVariantsTo-exit
-        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllPathVariantsFromEntranceToExit(session, t, S, C, F, list(A), allJoinNodes)
+        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, list(A), allJoinNodes)
 
         if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
             g = []
@@ -62,7 +62,7 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
                 # input: 2 region. Region = entrance node to exit node
                 # detect and handle a shorcut between 2 regions
                 # output: number of shorcut found
-                generalHelper.shortcutHandlerBetweenRegion(session, regionA, regionB) # icr = incomplete concurrent relationship
+                generalHelper.ICRHandlerBetweenRegion(session, regionA, regionB) # icr = incomplete concurrent relationship
 
                 exit = validEntrancePairToJoinBlock[2]  # [exit0,exit1]
                 if len(validEntrancePairToJoinBlock[0]) > 0:  # validEntrancesToJoinPath --> ada distance path nya
