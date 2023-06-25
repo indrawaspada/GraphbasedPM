@@ -8,6 +8,7 @@ from helper import joinHelper, splitHelper, generalHelper
 import gpd
 import discoverXOR, discoverAND, saveToPnml
 from pm4py.objects.petri.petrinet import PetriNet, Marking
+import pm4py
 
 
 
@@ -139,49 +140,58 @@ if __name__ == '__main__':
     initialNodeName = 'START' # ganti dengan get initial node name
     gpd = gpd.GraphbasedDiscovery(session)
 
-    GWlist, joinXORList, joinANDList = gpd.discoverGW(session, initialNodeName, counter)  # node split terdekat
-    print('GWlist= ', GWlist, 'joinXORList= ', joinXORList, 'joinANDList= ', joinANDList)
+    join_GWlist, joinXORList, joinANDList = gpd.discoverGW(session, initialNodeName, counter)  # node split terdekat
+    print('GWlist= ', join_GWlist, 'joinXORList= ', joinXORList, 'joinANDList= ', joinANDList)
     #
 
-    # setelah split selesai, maka periksa JOIN untuk disisipkan
-    for XORjoin in joinXORList:
-        print('XORjoin= ', XORjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
-        xorJoinGW_name = XORjoin[0]
-        exitNodes = XORjoin[1]
-        joinNodeName = XORjoin[2]
+    # urutkan dari joinNode yang terjauhy daulu
 
+    # detect xor atau and join
+    for g in join_GWlist:
+        joinGW_name = g[0]
+        exitNodes = g[1]
+        joinNodeName = g[2]
         # check jika antara exitNode dan joinNode ada type node lain maka replace exitNode dg nodeLain terdekat
-        while True:
-            finish = True
-            for exitNode in exitNodes:
-                pair = [exitNode, joinNodeName]
-                if generalHelper.sequence_detector(session, pair):
-                    pass # aman, tidak ada node lain
-                else: # ada node lain
-                    newExit = generalHelper.getTheDirectExitToJoinNode(session, exitNode, joinNodeName)
-                    oldExit = exitNode
-                    exitNodes.remove(oldExit)
-                    exitNodes.append(newExit)
-                    finish = False
-            if finish == True:
-                break
+        exitNodes = generalHelper.insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName)
+        if len(exitNodes) == 0 :
+            continue # jika exitNodes is not valid maka skip, lanjut gw berikutnya
 
-        discoverXOR.insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName)
-
+        if g[0][:3] == 'and':
+            discoverAND.insertANDJoinGW(session, exitNodes, joinGW_name, joinNodeName)
+        elif g[0][:3] == 'xor':
+            discoverXOR.insertXORJoinGW(session, exitNodes, joinGW_name, joinNodeName)
         # setelah insert joinGW maka joinNodeName di joinXORList di replace dengan xorJoinGW_name
-        for joinNode in joinXORList:
-            if joinNode[2] == joinNodeName :
-                joinNode[2] = xorJoinGW_name
+        for joinNode in join_GWlist:
+            if joinNode[2] == joinNodeName:
+                joinNode[2] = joinGW_name
 
 
-    # insert AND-join
-    for ANDjoin in joinANDList:
-        print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
-        andJoinGW_name = ANDjoin[0]
-        exitNodes = ANDjoin[1]
-        joinNodeName = ANDjoin[2]
-        discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
-
+    # # setelah split selesai, maka periksa JOIN untuk disisipkan
+    # for XORjoin in joinXORList:
+    #     print('XORjoin= ', XORjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
+    #     xorJoinGW_name = XORjoin[0]
+    #     exitNodes = XORjoin[1]
+    #     joinNodeName = XORjoin[2]
+    #
+    #     # check jika antara exitNode dan joinNode ada type node lain maka replace exitNode dg nodeLain terdekat
+    #     exitNodes = generalHelper.insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName)
+    #
+    #     discoverXOR.insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName)
+    #
+    #     # setelah insert joinGW maka joinNodeName di joinXORList di replace dengan xorJoinGW_name
+    #     for joinNode in joinXORList:
+    #         if joinNode[2] == joinNodeName :
+    #             joinNode[2] = xorJoinGW_name
+    #
+    #
+    # # insert AND-join
+    # for ANDjoin in joinANDList:
+    #     print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
+    #     andJoinGW_name = ANDjoin[0]
+    #     exitNodes = ANDjoin[1]
+    #     joinNodeName = ANDjoin[2]
+    #     discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
+    #
 
     splitHelper.setOutDegreeInNodes(session)
     joinHelper.setInDegreeInNodes(session)
@@ -215,6 +225,8 @@ if __name__ == '__main__':
 
     gviz = pn_vis_factory.apply(petri_net, petri_im, petri_fm)
     pn_vis_factory.view(gviz)
+
+    pm4py.write_pnml(petri_net, petri_im, petri_fm, "yellow_f10.pnml")
 
 
 

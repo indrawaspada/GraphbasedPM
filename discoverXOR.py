@@ -5,7 +5,7 @@ from helper import generalHelper, joinHelper, blockHelper
 # 3. deteksi join nya
 # 4. simpan data join dalam tabel
 def discoverXOR(session, t, S, C, F, counter):
-    GWlist = []
+    joinGWlist = []
     joinXORgw = []
     # print('t= ', t)
     X = set()  # concurrentPair
@@ -113,7 +113,7 @@ def discoverXOR(session, t, S, C, F, counter):
 
             SCPLen = len(SCP)  # ['BAPLIE', 'VESSEL_ATB']
             if g is not None:
-                GWlist.append(g)
+                # splitGWlist.append(g)
                 Cu = set()
                 Fi = set()
                 for i in range(SCPLen):  # jumlah node entrace pair (s1,s2,...)
@@ -140,37 +140,11 @@ def discoverXOR(session, t, S, C, F, counter):
             JCP = h[0][1]  # JCP = exits
             joinNode = h[1]
             joinXORgw.append(["xorJoinGW_" + str(counter), JCP, joinNode])
+            joinGWlist.append("xorJoinGW_" + str(counter)) # nama saja
             counter = counter + 1  # node number in a block counter
 
         print('S: ', S)
-    return S, C, F, counter, X, GWlist, joinXORgw
-
-# def insertXORSplitGW(session, splitNodeName, splitPairs, counter):
-#     # Split detection
-#
-#     q_split = '''
-#             MATCH (n {Name:$splitNodeName})-[r:DFG]->(a:RefModel)
-#             WHERE a.Name in $splitPairs
-#             MERGE (n)-[s:DFG {rel:r.rel}]->(splitGW:GW:RefModel {Name:"XORSplitGW"+"_"+$counter})
-#             WITH s, r, splitGW, a
-#             MERGE (splitGW)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
-#             // hapus r
-#             DELETE r
-#             SET t.split = True, splitGW.type= 'xorSplit', splitGW.split_gate = True
-#             WITh s, sum(t.dff) as sum_t_dff, splitGW
-#             SET s.dff = sum_t_dff
-#             WITH splitGW
-#             RETURN splitGW.Name
-#             '''
-#     records = session.run(q_split, splitNodeName=splitNodeName, splitPairs=splitPairs, counter=counter)
-#
-#     for rec in records:
-#         if rec is not None:
-#             for splitGWName in rec:
-#                 print(splitGWName)
-#                 return splitGWName
-#         else:
-#             return None
+    return S, C, F, counter, X, joinGWlist, joinXORgw
 
 def insertXORSplitGW(session, splitNodeName, splitPairs, counter):
     # Split detection
@@ -178,12 +152,12 @@ def insertXORSplitGW(session, splitNodeName, splitPairs, counter):
     q_split = '''
             MATCH (n {Name:$splitNodeName})-[r:DFG]->(a:RefModel)
             WHERE a.Name in $splitPairs
-            MERGE (n)-[s:DFG {rel:r.rel}]->(splitGW:GW:RefModel {Name:"XORSplitGW"+"_"+$counter})
+            MERGE (n)-[s:DFG {rel:r.rel}]->(splitGW:GW:RefModel {Name:"xorSplitGW"+"_"+$counter})
             WITH s, r, splitGW, a
             MERGE (splitGW)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
             // hapus r
             DELETE r
-            SET t.split = True, splitGW.type= 'xorSplit', splitGW.split_gate = True
+            SET t.split = True, splitGW.type= 'xorSplit', splitGW.split_gate = True, splitGW.label='Invisible'
             WITh s, sum(t.dff) as sum_t_dff, splitGW
             SET s.dff = sum_t_dff
             WITH splitGW
@@ -210,7 +184,7 @@ def insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName):
             MERGE (a)-[t:DFG {rel:r.rel, dff:r.dff}]->(joinGW)
             // hapus r
             DELETE r
-            SET t.join = True, joinGW.type = 'xorJoin', joinGW.join_gate = True
+            SET t.join = True, joinGW.type = 'xorJoin', joinGW.join_gate = True, joinGW.label='Invisible'
             WITH s, sum(t.dff) as sum_t_dff, joinGW
             SET s.dff = sum_t_dff
             WITH joinGW

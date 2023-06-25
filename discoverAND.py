@@ -2,9 +2,9 @@ from helper import joinHelper, generalHelper, blockHelper
 
 
 # kuncinya menemukan AND-split, sedangkan AND-join diputuskan berdasarkan blok yang ditemukan
-def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
+def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
     # concurrentPair = []
-    GWlist = []
+    joinGWlist = []
     joinANDgw = []
     A = set()  # concurrentPair
     # Check potensi konkurensi
@@ -35,17 +35,19 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
 
         if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
             g = []
-            return S, C, F, counter, A, GWlist, joinANDgw
+            return S, C, F, counter, A, joinGWlist, joinANDgw
 
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()
         for pathVariantsFromEntranceToExit in allPathVariantsFromEntranceToExit:
             entrance0 = pathVariantsFromEntranceToExit[0][0]
-            paths0 = pathVariantsFromEntranceToExit[0][
-                1]  # [['VESSEL_ATB', 'DISCHARGE', 'JOB_DEL'], ['VESSEL_ATB', 'DISCHARGE', 'STACK']]
+            print("entrance0= ", entrance0)
+            paths0 = pathVariantsFromEntranceToExit[0][1]  # [['VESSEL_ATB', 'DISCHARGE', 'JOB_DEL'], ['VESSEL_ATB', 'DISCHARGE', 'STACK']]
+            print("pathVariantsFromEntranceToExit= ", pathVariantsFromEntranceToExit)
             entrance1 = pathVariantsFromEntranceToExit[1][0]
             paths1 = pathVariantsFromEntranceToExit[1][1]
             joinNode = pathVariantsFromEntranceToExit[0][2]
+            print("joinNode= ", joinNode)
 
             # dapat valid kandidat regions
             allValidEntrancePairToJoinBlock = joinHelper.filterValidEntrancePairsToJoinBlocks(paths0,
@@ -54,9 +56,9 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
 
             # jika ada validPaths
             for validEntrancePairToJoinBlock in allValidEntrancePairToJoinBlock:  # [validEntrancesToJoinPath, status, [exit0,exit1]
-                regionA = allValidEntrancePairToJoinBlock[0][0][0]
+                regionA = validEntrancePairToJoinBlock[0][0]
                 print('regionA= ', regionA)  # regionA=  ['CUSTOMS_DEL', 'JOB_DEL']
-                regionB = allValidEntrancePairToJoinBlock[0][0][1]
+                regionB = validEntrancePairToJoinBlock[0][1]
                 print('regionB= ', regionB)  # regionB=  ['VESSEL_ATB', 'DISCHARGE', 'STACK']
 
                 # input: 2 region. Region = entrance node to exit node
@@ -111,15 +113,9 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
             g = insertANDSplitGW(session, t, SCP, counter)
             print('g= ', g)
 
-            # # insert join_AND_gw
-            # JCP = h[0][1]  # JCP = exits
-            # joinNode = h[1]
-            # joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode])
-
-
             SCPLen = len(SCP)  # ['BAPLIE', 'VESSEL_ATB']
             if g is not None:
-                GWlist.append(g)
+                # splitGWlist.append(g)
                 Cu = set()
                 Fi = set()
                 for i in range(SCPLen):  # jumlah node concurent pair (s1,s2,...)
@@ -136,16 +132,18 @@ def discoverAND(session, t, S, C, F, counter, GWlist, joinANDgw):
                 C[g] = Cu
                 F[g] = Fi
                 print('F= ', F)
+                break # coba dulu
 
         for h in H:
             # insert join_AND_gw
             JCP = h[0][1]  # JCP = exits
             joinNode = h[1]
-            joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode])
+            joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode]) # lengkap dg lokasinya
+            joinGWlist.append("andJoinGW_" + str(counter)) # hanya nama saja
             counter = counter + 1  # node number in a block counter
 
         print('S: ', S)
-    return S, C, F, counter, A, GWlist, joinANDgw  # selama masih ditemukan konkuren (A>0) perlu diulang
+    return S, C, F, counter, A, joinGWlist, joinANDgw  # selama masih ditemukan konkuren (A>0) perlu diulang
 
 def insertANDSplitGW(session, splitNodeName, conPair, counter):
     # Split detection
@@ -158,7 +156,7 @@ def insertANDSplitGW(session, splitNodeName, conPair, counter):
             MERGE (splitGW)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
             // hapus r
             DELETE r
-            SET t.split = True, splitGW.type= 'andSplit', splitGW.split_gate = True
+            SET t.split = True, splitGW.type= 'andSplit', splitGW.split_gate = True, splitGW.label='Invisible'
             WITh s, sum(t.dff) as sum_t_dff, splitGW
             SET s.dff = sum_t_dff
             WITH splitGW
@@ -185,7 +183,7 @@ def insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName):
             MERGE (a)-[t:DFG {rel:r.rel, dff:r.dff}]->(joinGW)
             // hapus r
             DELETE r
-            SET t.join = True, joinGW.type = 'andJoin', joinGW.join_gate = True
+            SET t.join = True, joinGW.type = 'andJoin', joinGW.join_gate = True, joinGW.label='Invisible'
             WITH s, sum(t.dff) as sum_t_dff, joinGW
             SET s.dff = sum_t_dff
             WITH joinGW

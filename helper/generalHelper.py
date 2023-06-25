@@ -144,12 +144,9 @@ def getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes
 
                 # cek jika entrance = joinNode maka sisipkan invisible task
                 if entrance == joinNode:
-                    # # insert invisible task between splitNode and joinNode
-                    # entrance = insertInvisibleTask(session,t, joinNode)
-                    #
-                    # S, C, F = splitHelper.entranceScanner(session, t)
-                    # allEntranceCombPaths = []
-                    # return allEntranceCombPaths, S, C, F
+
+                    skipJoinNode = True
+                    entrancePairPaths = [] # isinya dibatalkan
                     break
 
                 # if entrance == joinNode:
@@ -161,6 +158,7 @@ def getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes
                 else:
                     entrancePairPaths = []
                     break
+
             if len(entrancePairPaths) > 0:
                 allEntranceCombPaths.append(entrancePairPaths)
 
@@ -208,14 +206,18 @@ def insertInvisibleTask(session, splitNodeName, joinNodeName):
         else:
             return None
 
+
+# deteksi path yang hanya bertipe gw dan invisible
 def getTheDirectExitToJoinNode(session, exitNode, joinNodeName):
     q_replaceWithDirectExitToJoinNode = '''
-        MATCH path = allshortestpaths((a {Name:$exitNode})-[r:DFG *..100]->(c:RefModel ))
-        WHERE c.Name = $joinNodeName
-        WITH c, path, [n in nodes(path)| n.Name] AS nnames
+        MATCH p=shortestPath((a {Name:$exitNode})-[:DFG *..100]->(c:RefModel {Name:$joinNodeName }))
+        with p, nodes(p) as ns,c 
+        WHERE ALL(n IN ns[1..-1] WHERE  (n.label = 'Invisible'))
+        WITH c, p, [n in nodes(p)| n.Name] AS nnames
         MATCH (b)-->(c)
         WHERE b.Name in nnames
         RETURN b.Name
+        limit 1
         '''
     results = session.run(q_replaceWithDirectExitToJoinNode, exitNode=exitNode, joinNodeName=joinNodeName)
 
@@ -354,3 +356,25 @@ def mergeSameGwInSequence(session):
         #         result = False
     return result
 
+def insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName):
+    while True:
+        finish = True
+        for exitNode in exitNodes:
+            pair = [exitNode, joinNodeName]
+
+            # jika terdeteksi ada exit-joinNode yg konkuren maka exitNodes not valid
+            if splitHelper.isConcurrent(session,pair[0], pair[1]):
+                exitNodes = []
+                return  exitNodes
+
+            if sequence_detector(session, pair):
+                pass  # aman, tidak ada node lain
+            else:  # ada node lain
+                newExit = getTheDirectExitToJoinNode(session, exitNode, joinNodeName)
+                oldExit = exitNode
+                exitNodes.remove(oldExit)
+                exitNodes.append(newExit)
+                finish = False
+        if finish == True:
+            break
+    return exitNodes

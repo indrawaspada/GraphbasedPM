@@ -1,33 +1,34 @@
 
 def andSplit_bpmnToPetriNet(session):
-    # q_andSplitDetect = '''
-    #     OPTIONAL MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
-    #     WHERE x.type = 'andSplit'
-    #     RETURN x.Name
-    # '''
-    # result = session.run(q_andSplitDetect)
-
     q_andSplit_bpmnToPetriNet = '''
         MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
         WHERE x.type = 'andSplit'
-        SET x.type = 'activity', x.label = 'Invisible'
         WITH a,x,b,r,s
         CREATE (p:Place {Name: 'p_split'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
-        MERGE (x)-[t:Arc]->(p)-[u:Arc]->(b)
+        MERGE (a)-[t:Arc]->(p)-[u:Arc]->(b)
         SET t.dff = r.dff, u.dff = s.dff 
+        WITH distinct(r) as single_r, s, x
+        DELETE single_r
+        WITH s, x
         DELETE s
+        WITH x
+        DELETE x
         RETURN null
     '''
     session.run(q_andSplit_bpmnToPetriNet)
-    # status = ''
-    # for record in result:
-    #     print(record[0])
-    #     if record[0] is not None:
-    #         status = 'and_split_exist'
-    # if status == 'and_split_exist':
-    #     session.run(q_andSplit_bpmnToPetriNet)
 
-
+    # q_andSplit_bpmnToPetriNet = '''
+    #     MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
+    #     WHERE x.type = 'andSplit'
+    #     SET x.type = 'activity', x.label = 'Invisible'
+    #     WITH a,x,b,r,s
+    #     CREATE (p:Place {Name: 'p_split'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+    #     MERGE (x)-[t:Arc]->(p)-[u:Arc]->(b)
+    #     SET t.dff = r.dff, u.dff = s.dff
+    #     DELETE s
+    #     RETURN null
+    # '''
+    # session.run(q_andSplit_bpmnToPetriNet)
 
 def andJoin_bpmnToPetriNet(session):
     # q_andJoinDetect = '''
@@ -40,12 +41,16 @@ def andJoin_bpmnToPetriNet(session):
     q_andJoin_bpmnToPetriNet = '''
         MATCH (a:RefModel)-[r]->(x:GW)-[s]->(b:RefModel)
         WHERE x.type = 'andJoin'
-        SET x.type = 'activity', x.label = 'Invisible'
         WITH a,x,b,r,s
-        CREATE (p:Place {Name: 'p_join'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
-        MERGE (a)-[t:Arc]->(p)-[u:Arc]->(x)
+        CREATE (p:Place {Name: 'p_and_join'+a.Name+'_'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+        MERGE (a)-[t:Arc]->(p)-[u:Arc]->(b)
         SET t.dff = r.dff, u.dff = s.dff 
+        WITH distinct(s) as single_s, r, x
+        DELETE single_s
+        WITH r, x
         DELETE r
+        WITH x
+        DELETE x
         RETURN null
     '''
 
@@ -71,7 +76,7 @@ def xorSplit_bpmnToPetriNet(session):
         MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorSplit'
         WITH a,x,b,r,s
-        CREATE (p:Place {Name: 'p_split'+a.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+        CREATE (p:Place {Name: 'p_xor_split'+a.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
         MERGE (a)-[t:Arc]->(p)-[u:Arc]->(b)
         SET t.dff = r.dff, u.dff = s.dff 
         WITH DISTINCT x, a, p
@@ -103,7 +108,7 @@ def xorJoin_bpmnToPetriNet(session):
         MATCH (a:Activity)-[r]->(x:GW)-[s]->(b:Activity)
         WHERE x.type = 'xorJoin'
         WITH a,x,b,r,s
-        CREATE (p:Place {Name: 'p_join'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
+        CREATE (p:Place {Name: 'p_xor_join'+b.Name, label: 'Invisible', token:0, c:0, p:0, m:0, fm:0, inv_incoming: true})
         MERGE (a)-[t:Arc]->(p)-[u:Arc]->(b)
         SET t.dff = r.dff, u.dff = s.dff 
         WITH DISTINCT x, p, b
