@@ -1,4 +1,4 @@
-from helper import joinHelper, generalHelper, blockHelper
+from helper import joinHelper, generalHelper, blockHelper, funcHelper
 
 
 # kuncinya menemukan AND-split, sedangkan AND-join diputuskan berdasarkan blok yang ditemukan
@@ -17,7 +17,7 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
             CF2 = set()
             CF2.update(C[s2].union(F[s2]))  # Cover+Future 2
             if (CF1 == CF2) and (s1 != s2):  # cari pasangan konkuren
-                print("DITEMUKAN KONKUREN!!!!")
+                print("DITEMUKAN NODE DG KONKUREN!!!!")
                 A.add(s2)  # node s2 dengan konkurensi, sekaligus penanda bahwa masih ada konkuren nodes
         if len(A) > 0:  # jika ada konkurensi
             A.add(s1)  # node s1 otomatis jg mrpk node konkurensi
@@ -31,47 +31,52 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
         # Get valid block from 2 entrances
         # input: list of entrances
         # output:list of entrance-allPathVariantsTo-exit
-        allPathVariantsFromEntranceToExit, S, C, F = generalHelper.getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, list(A), allJoinNodes)
+        allEntranceToExitPaths, S, C, F = generalHelper.getAllANDEntranceToExitPaths(session, t, S, C, F, list(A), allJoinNodes)
 
-        if len(allPathVariantsFromEntranceToExit) == 0: # berarti ada insert invisible task
+        if len(allEntranceToExitPaths) == 0: # berarti ada insert invisible task
             g = []
             return S, C, F, counter, A, joinGWlist, joinANDgw
 
         # input 2 entrance, some paths, 1 join node. Result: valid block only
         valid_blocks = dict()
-        for pathVariantsFromEntranceToExit in allPathVariantsFromEntranceToExit:
-            entrance0 = pathVariantsFromEntranceToExit[0][0]
+        for entranceToExitPaths in allEntranceToExitPaths:
+            entrance0 = entranceToExitPaths[0][0]
             print("entrance0= ", entrance0)
-            paths0 = pathVariantsFromEntranceToExit[0][1]  # [['VESSEL_ATB', 'DISCHARGE', 'JOB_DEL'], ['VESSEL_ATB', 'DISCHARGE', 'STACK']]
-            print("pathVariantsFromEntranceToExit= ", pathVariantsFromEntranceToExit)
-            entrance1 = pathVariantsFromEntranceToExit[1][0]
-            paths1 = pathVariantsFromEntranceToExit[1][1]
-            joinNode = pathVariantsFromEntranceToExit[0][2]
+            paths0 = entranceToExitPaths[0][1]  # [['VESSEL_ATB', 'DISCHARGE', 'JOB_DEL'], ['VESSEL_ATB', 'DISCHARGE', 'STACK']]
+            print("pathVariantsFromEntranceToExit= ", entranceToExitPaths)
+            entrance1 = entranceToExitPaths[1][0]
+            paths1 = entranceToExitPaths[1][1]
+            joinNode = entranceToExitPaths[0][2]
             print("joinNode= ", joinNode)
 
+
             # dapat valid kandidat regions
-            allValidEntrancePairToJoinBlock = joinHelper.filterValidEntrancePairsToJoinBlocks(paths0,
-                                                                                              paths1)  # dapat path yg valid, bs lebih dari 1
-            print('validEntranceCombPaths= ', allValidEntrancePairToJoinBlock)
+            allValidBlocks = joinHelper.getValidBlocks(paths0,paths1)  # dapat path yg valid, bs lebih dari 1
+            print('validEntranceCombPaths= ', allValidBlocks)
 
             # jika ada validPaths
-            for validEntrancePairToJoinBlock in allValidEntrancePairToJoinBlock:  # [validEntrancesToJoinPath, status, [exit0,exit1]
-                regionA = validEntrancePairToJoinBlock[0][0]
+            removedInvNodes = []
+            for validBlock in allValidBlocks:  # [validEntrancesToJoinPath, status, [exit0,exit1]
+                regionA = validBlock[0][0]
                 print('regionA= ', regionA)  # regionA=  ['CUSTOMS_DEL', 'JOB_DEL']
-                regionB = validEntrancePairToJoinBlock[0][1]
+                regionB = validBlock[0][1]
                 print('regionB= ', regionB)  # regionB=  ['VESSEL_ATB', 'DISCHARGE', 'STACK']
 
                 # input: 2 region. Region = entrance node to exit node
                 # detect and handle a shorcut between 2 regions
                 # output: number of shorcut found
-                generalHelper.ICRHandlerBetweenRegion(session, regionA, regionB) # icr = incomplete concurrent relationship
+                shortcut, removedInvNodes = generalHelper.ICRHandlerBetweenRegion(session, regionA, regionB, joinNode, allValidBlocks) # icr = incomplete concurrent relationship
 
-                exit = validEntrancePairToJoinBlock[2]  # [exit0,exit1]
-                if len(validEntrancePairToJoinBlock[0]) > 0:  # validEntrancesToJoinPath --> ada distance path nya
+                if removedInvNodes: # not None
+                    for removedInvNode in removedInvNodes:
+                        validBlock = funcHelper.traverse_nested_list(validBlock, removedInvNode)
+
+                exit = validBlock[2]  # [exit0,exit1]
+                if len(validBlock[0]) > 0:  # validEntrancesToJoinPath --> ada distance path nya
                     entrancePair = [entrance0, entrance1]
                     entrancePair.sort() # seragamkan
                     entrancePair = tuple(entrancePair) # ubah ke tuple
-                    distance = validEntrancePairToJoinBlock[0][2]
+                    distance = validBlock[0][2]
 
                     if entrancePair not in valid_blocks: # cari pasangan entrance yang ada di daftar valid block
                         valid_blocks[entrancePair] = []
@@ -88,24 +93,24 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
 
         # input : valid blocks
         # output: joinNode with its all possible entrances and paths
-        joinNodeEnum = generalHelper.enumJoinNode(valid_blocks)
+        joinNodes_have_validBlocks = generalHelper.enumJoinNode(valid_blocks)
 
         # kalau ada tuple entrancePair yang beririsan maka gabungkan
         mergedEntrancePair = []
-        for joinNode in joinNodeEnum:
+        for joinNode in joinNodes_have_validBlocks:
             while True:
-                entrance_to_exit_pairs = joinNodeEnum[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
-                finish, joinNodeEnum = joinHelper.mergeEntrance_exit_pairs(session, t, joinNodeEnum, joinNode,entrance_to_exit_pairs)
+                theBlocks = joinNodes_have_validBlocks[joinNode]  # [[('BAPLIE', 'VESSEL_ATB'), ['VESSEL_ATB', 'BAPLIE']]]
+                finish, joinNodes_have_validBlocks = joinHelper.mergeBlocks(session, t, joinNodes_have_validBlocks, joinNode, theBlocks)
                 if finish:
                     break
-        mergedJoinNodeEnum = joinNodeEnum
+        joinNode_have_MergedBlocks = joinNodes_have_validBlocks
 
         # cek kalau ada joinNode bersama maka tidak perlu cek hierarki
         # TODO: cek apakah ada joinNode bersama
 
         # pick the minimal number of entrancesPairPaths --> KOREKSI
         # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
-        H = blockHelper.getTheNextHierarchies(mergedJoinNodeEnum)
+        H = blockHelper.getTheNextHierarchies(joinNode_have_MergedBlocks)
 
         for h in H:
             # insert split_AND_gw
@@ -138,7 +143,7 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
             # insert join_AND_gw
             JCP = h[0][1]  # JCP = exits
             joinNode = h[1]
-            joinANDgw.append(["andJoinGW_" + str(counter), JCP, joinNode]) # lengkap dg lokasinya
+            joinANDgw.append(["andJoinGW_" + str(counter), t, JCP, joinNode]) # lengkap dg lokasinya
             joinGWlist.append("andJoinGW_" + str(counter)) # hanya nama saja
             counter = counter + 1  # node number in a block counter
 

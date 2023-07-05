@@ -170,3 +170,12 @@ def removeLabel_BC_RefModel_TPS(session):
     '''
     session.run(q_removeLabel)
 
+
+def formatInvisibleAccordingToProm(session):
+    q_invisibleProm = '''
+        MATCH (n:Transition)
+        WHERE n.label = 'Invisible'
+        SET n.activity = "$invisible$"
+        RETURN null
+    '''
+    session.run(q_invisibleProm)

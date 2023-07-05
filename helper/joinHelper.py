@@ -129,11 +129,12 @@ def intersection(lst1, lst2):
         return False
 
 #     return lst3
-def filterValidEntrancePairsToJoinBlocks(paths0, paths1):  # entrance to exit
-    validEntrancesToJoinPaths = []
+def getValidBlocks(paths0, paths1):  # entrance to exit
+    validBlocks = []
     # paths0  [['DISCHARGE', 'JOB_DEL'], ['DISCHARGE', 'STACK']]
     # paths1  [['DISCHARGE', 'JOB_DEL'], ['DISCHARGE', 'STACK']]
-    # pathsx [['VESSEL_ATB', 'DISCHARGE', 'JOB_DEL'], ['VESSEL_ATB', 'DISCHARGE', 'STACK']]
+    # pathsx [['VESSEL
+    # _ATB', 'DISCHARGE', 'JOB_DEL'], ['VESSEL_ATB', 'DISCHARGE', 'STACK']]
     status = 'Not Found'
     for path0 in paths0:
         for path1 in paths1:
@@ -142,13 +143,13 @@ def filterValidEntrancePairsToJoinBlocks(paths0, paths1):  # entrance to exit
             if not common_exist:  # jalur yang tidak ada interseksi berarti valid
                 lenPath0 = len(path0)
                 lenPath1 = len(path1)
-                validEntrancesToJoinPath = [path0, path1, lenPath0 + lenPath1]
+                validBlock = [path0, path1, lenPath0 + lenPath1]
                 #                     validEntrancesToJoinPaths.append(validEntrancesToJoinPath)
                 status = 'Found'
                 exit0 = path0[-1]
                 exit1 = path1[-1]
-                validEntrancesToJoinPaths.append([validEntrancesToJoinPath, status, [exit0, exit1]])
-    return validEntrancesToJoinPaths  # , status, exit # [[{'CUSTOMS_DEL': ['JOB_DEL']}, {'VESSEL_ATB': ['DISCHARGE', 'STACK']}]]
+                validBlocks.append([validBlock, status, [exit0, exit1]])
+    return validBlocks  # , status, exit # [[{'CUSTOMS_DEL': ['JOB_DEL']}, {'VESSEL_ATB': ['DISCHARGE', 'STACK']}]]
 
 def mergePathPairs(listOfPathPairs):  # [ [ [path_pair],status, exit ], [...] ]
     print('In merge listOfPathPairs= ', listOfPathPairs[0])
@@ -167,7 +168,7 @@ def mergePathPairs(listOfPathPairs):  # [ [ [path_pair],status, exit ], [...] ]
 # input: semua variasi pasangan entrance, dan pasangan exit
 # output: entrance, dan exit yang sudah di merge
 # cara merge, jika ada irisan
-def mergeEntrance_exit_pairs(session, t, joinNodeEnum, joinNode, entrance_to_exit_pairs):
+def mergeBlocks(session, t, joinNodeEnum, joinNode, entrance_to_exit_pairs):
 #     nodeJoin = 'JOB_DEL'
 #     tuplePairs = [('CUSTOMS_DEL', 'VESSEL_ATB'), ('BAPLIE', 'CUSTOMS_DEL')]
 #     tuplePairs = entrance_exit_pairs

@@ -61,6 +61,10 @@ def closestSplitNode(session, initial, listOfSplitNodes):
         #         print(length)
         if (length is not None) and (length < theClosestSplitNode[0]):
             theClosestSplitNode = [length, splitNode]
+        # elif length is None:
+
+
+
     return theClosestSplitNode
 
 def getAllDirectSuccessors(session, splitNodeName):

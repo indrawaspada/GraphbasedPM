@@ -4,7 +4,7 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
 from neo4j import GraphDatabase
-from helper import joinHelper, splitHelper, generalHelper
+from helper import joinHelper, splitHelper, generalHelper, preprocessing
 import gpd
 import discoverXOR, discoverAND, saveToPnml
 from pm4py.objects.petri.petrinet import PetriNet, Marking
@@ -17,16 +17,16 @@ def print_hi(name):
     print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
 
 #Delete all nodes with relationship
-def clearAll():
+def clearAll(session):
     query="MATCH (N) detach delete (N)"
     session.run(query)
     return None
 
-def constructDFFRefModel(fileName):
+def constructDFFRefModel(session, fileName):
     q_trace = '''
                 USING PERIODIC COMMIT
                 LOAD CSV with headers FROM $fileName AS line
-                MERGE (:Trace {LineNo:toInteger(line.index), CaseId: line.case, Name:line.event, Frequency:toInteger(line.frequency), idff:0, odff:0});
+                MERGE (:Trace {LineNo:toInteger(line.index), CaseId: line.case, Name:line.event, Frequency:toInteger(line.case_frequency), idff:0, odff:0});
             '''
     session.run(q_trace, fileName=fileName)
 
@@ -89,29 +89,69 @@ def constructDFFRefModel(fileName):
     #             '''
     #     session.run(q_filter_low_freq)
 
+    # q_concurrent = '''
+    #         MATCH (x:Trace)-[p:DFG]->(y:Trace)-[q:DFG]->(z:Trace)
+    #         WITH x,y,z
+    #         MATCH (a:RefModel)-[r:DFG]->(b:RefModel)-[s:DFG]->(c:RefModel)
+    #         WHERE
+    #         c.Name = a.Name AND // detect a-b-a pattern in model,
+    #         x.Name = a.Name AND // find the matched a-b pattern in traces
+    #         y.Name = b.Name AND
+    #         x.Name <> z.Name  // if not a-b-a then it's a concurrent else it's a shortloop
+    #         //AND r.dff > 100 AND s.dff > 100 // concurrent threshold
+    #         MERGE (a)-[:CONCURRENT {rel:'NONE', dff:r.dff}]->(b)
+    #         DELETE r;
+    #         '''
+    # session.run(q_concurrent)
+    # return None
+
+    generalHelper.removeSelfLoop(session)
+
+
     q_concurrent = '''
-            MATCH (x:Trace)-[p:DFG]->(y:Trace)-[q:DFG]->(z:Trace)
-            WITH x,y,z
-            MATCH (a:RefModel)-[r:DFG]->(b:RefModel)-[s:DFG]->(c:RefModel) 
+            MATCH (p:RefModel)-[v:DFG]->(a:RefModel)-[r:DFG]->(b:RefModel)-[s:DFG]->(c:RefModel)-[w:DFG]->(q:RefModel)
+            WITH a,r,b,s,c
+            MATCH (i1)-->(a)-->(o1) // shortloop
+            WITH a,r,b,s,c, i1, o1
+            MATCH (i2)-->(b)-->(o2)
             WHERE 
-            c.Name = a.Name AND // detect a-b-a pattern in model,
-            x.Name = a.Name AND // find the matched a-b pattern in traces
+            c.Name = a.Name // detect a-b-a pattern in model (tp di trace tdk boleh a=c)
+            //AND NOT (a)-->(a)
+            //AND NOT (b)-->(b)
+            AND i1.Name <> b.Name // harus ada input output selain konkuren
+            AND NOT (a)-->(i1)-->(a) // bukan shortloop
+            AND i2.Name <> a.Name AND NOT (b)-->(i2)-->(b)
+            AND o1.Name <> b.Name AND NOT (a)-->(o1)-->(a)
+            AND o2.Name <> a.Name AND NOT (b)-->(o2)-->(b)
+            WITH a,b,c, r, s
+            MATCH (x:Trace)-[p:DFG]->(y:Trace)-[q:DFG]->(z:Trace) // trace 1
+            WITH a,b,c, r, s, x, p, y, q, z
+            MATCH (l:Trace)-[t:DFG]->(m:Trace)-[u:DFG]->(n:Trace) // trace 2
+            WHERE 
+            x.Name = m.Name AND y.Name = l.Name AND// trace 1 dan 2 berlawanan arah
+            x.Name = a.Name AND // matched a-b pattern in traces with model
             y.Name = b.Name AND
-            x.Name <> z.Name  // if not a-b-a then it's a concurrent else it's a shortloop
+            x.Name <> z.Name  // a-b-a is not a concurrent it's a shortloop
             //AND r.dff > 100 AND s.dff > 100 // concurrent threshold
             MERGE (a)-[:CONCURRENT {rel:'NONE', dff:r.dff}]->(b)
             DELETE r;
             '''
     session.run(q_concurrent)
+
+    # q_shortloop = '''
+    #
+    #         '''
+    # session.run(q_shortloop)
+
     return None
 
 #Delete all traces model
-def deleteTrace():
+def deleteTrace(session):
     query="MATCH (N:Trace) detach delete (N)"
     session.run(query)
     return None
 
-def splitJoinInit():
+def splitJoinInit(session):
     splitHelper.setOutDegreeInNodes(session)
     splitHelper.setSplitNodes(session)
     joinHelper.setInDegreeInNodes(session)
@@ -120,20 +160,52 @@ def splitJoinInit():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+
+    # bagian ini diaktifkan ketika belum punya file csv nya
+    # filename = "./data/bpic_2012/BPIC12_AO_Start_End.xes.gz"
+    # saveName = "bpic12_AO.csv"
+    # csv_file_name = preprocessing.convertToCsv(filename, saveName)
+    # print(csv_file_name)
+
     uri = "bolt://localhost:7687"
     driver = GraphDatabase.driver(uri, auth = ("neo4j", "faset123"))
     session = driver.session()
 
     # Model DFG preparation
-    clearAll()
-    # constructDFFRefModel('file:///df_green.csv') # AND
-    # constructDFFRefModel('file:///df_red.csv') # XOR
-    # constructDFFRefModel('file:///df_red_ok.csv') # XOR AND
-    # constructDFFRefModel('file:///df_yellow.csv')
-    constructDFFRefModel('file:///df_yellow_f10.csv')
-    deleteTrace()
-    splitJoinInit()
+    clearAll(session)
+    # filename = 'df_green_old.csv'
+    # filename = 'df_red.csv'
+    # filename = 'df_red_ok.csv'
+    # filename = 'df_yellow.csv'
+    filename = 'df_yellow_f10.csv'
+    #
+    # filename = "bpic12_A.csv"
+    # filename = "bpic12_O.csv"
+    # filename = "df_bpic12_AO.csv" # ada AND pendek
+    # filename = "df_bpic12_AW.csv" #
+    # filename = "df_bpic12_W.csv" #
+    # filename = "df_bpic12_AO_all_30.csv"
+    # filename = "df_bpic13_cp.csv"
+    # filename = "df_bpic17.csv"
+    # filename = "df_bpic17_O.csv"
+    # filename = "df_bpic17_A.csv"
+    # filename = "df_bpic17_W.csv"
+    # filename = "df_bpic17_AW.csv"
+    # filename = "df_bpic17_W_30.csv"
+    # filename = "df_bpic14_30.csv"
+    # filename = "df_bpic19_1.csv"
+
+    # filename = csv_file_name
+
+    constructDFFRefModel(session,'file:///'+ filename) # XOR AND
+
+    deleteTrace(session)
+    splitJoinInit(session)
     mainCounter = 0
+
+    # sisipkan invisible task ke loop
+    # generalHelper.detectLoopInsertInvTask(session)
+
 
     # Init variables
     counter = 0
@@ -149,10 +221,11 @@ if __name__ == '__main__':
     # detect xor atau and join
     for g in join_GWlist:
         joinGW_name = g[0]
-        exitNodes = g[1]
-        joinNodeName = g[2]
+        splitNode = g[1]
+        exitNodes = g[2]
+        joinNodeName = g[3]
         # check jika antara exitNode dan joinNode ada type node lain maka replace exitNode dg nodeLain terdekat
-        exitNodes = generalHelper.insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName)
+        exitNodes = generalHelper.updateExitNodeWithTheClosestNodeToJoinNode(session, splitNode, exitNodes, joinNodeName)
         if len(exitNodes) == 0 :
             continue # jika exitNodes is not valid maka skip, lanjut gw berikutnya
 
@@ -160,38 +233,12 @@ if __name__ == '__main__':
             discoverAND.insertANDJoinGW(session, exitNodes, joinGW_name, joinNodeName)
         elif g[0][:3] == 'xor':
             discoverXOR.insertXORJoinGW(session, exitNodes, joinGW_name, joinNodeName)
-        # setelah insert joinGW maka joinNodeName di joinXORList di replace dengan xorJoinGW_name
+        # setelah insert joinGW maka jika ada joinNodeName di joinGWList di replace dengan JoinNodename
         for joinNode in join_GWlist:
-            if joinNode[2] == joinNodeName:
-                joinNode[2] = joinGW_name
+            if joinNode[3] == joinNodeName:
+                joinNode[3] = joinGW_name
 
 
-    # # setelah split selesai, maka periksa JOIN untuk disisipkan
-    # for XORjoin in joinXORList:
-    #     print('XORjoin= ', XORjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
-    #     xorJoinGW_name = XORjoin[0]
-    #     exitNodes = XORjoin[1]
-    #     joinNodeName = XORjoin[2]
-    #
-    #     # check jika antara exitNode dan joinNode ada type node lain maka replace exitNode dg nodeLain terdekat
-    #     exitNodes = generalHelper.insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName)
-    #
-    #     discoverXOR.insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName)
-    #
-    #     # setelah insert joinGW maka joinNodeName di joinXORList di replace dengan xorJoinGW_name
-    #     for joinNode in joinXORList:
-    #         if joinNode[2] == joinNodeName :
-    #             joinNode[2] = xorJoinGW_name
-    #
-    #
-    # # insert AND-join
-    # for ANDjoin in joinANDList:
-    #     print('ANDjoin= ', ANDjoin)  # [['join_and_gw_0', ['VESSEL_ATB', 'BAPLIE']]]
-    #     andJoinGW_name = ANDjoin[0]
-    #     exitNodes = ANDjoin[1]
-    #     joinNodeName = ANDjoin[2]
-    #     discoverAND.insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName)
-    #
 
     splitHelper.setOutDegreeInNodes(session)
     joinHelper.setInDegreeInNodes(session)
@@ -205,18 +252,21 @@ if __name__ == '__main__':
     # lengkapi antar split dan antar join dengan invisible task
     # generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
 
-    # pola join yang belum punya gateway diberi gerbang OR
+    # pola join yang belum punya gateway diberi gerbang XOR
     result = joinHelper.detectLoopJoin(session)
     for loopjoin in result:
         exits = loopjoin[0]
         joinNodeName = loopjoin[1]
         mainCounter = mainCounter + 1
-        discoverXOR.insertXORJoinGW(session,exits,"xorLoopJoinGW_" + str(mainCounter), joinNodeName)
+        discoverXOR.insertXORJoinGW(session,exits,"xorLoopOrJoinGW_" + str(mainCounter), joinNodeName)
 
     splitHelper.setOutDegreeInNodes(session)
     joinHelper.setInDegreeInNodes(session)
     # lengkapi antar split dan antar join dengan invisible task
     generalHelper.insertInvisibleTaskBetweenConsecutiveGateway(session)
+
+    # # Hapus pola invisible task dengan relatinship cuncurrent
+    # generalHelper.removeInvisibleTaskWithConcurrentRelationship(session)
 
     petri_net = PetriNet("petri_net")
     petri_net, petri_im, petri_fm = saveToPnml.saveToPnml(session, petri_net)
@@ -226,7 +276,7 @@ if __name__ == '__main__':
     gviz = pn_vis_factory.apply(petri_net, petri_im, petri_fm)
     pn_vis_factory.view(gviz)
 
-    pm4py.write_pnml(petri_net, petri_im, petri_fm, "yellow_f10.pnml")
+    pm4py.write_pnml(petri_net, petri_im, petri_fm, './pnml/'+filename+'.pnml')
 
 
 

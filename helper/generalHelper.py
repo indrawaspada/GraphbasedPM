@@ -1,4 +1,4 @@
-from helper import splitHelper
+from helper import splitHelper, funcHelper
 
 # memasangkan kombinasi antar element dalam list
 def combinationPairInList(theList):
@@ -37,8 +37,8 @@ def sequence_detector(session, pair):
     #     nodeA = pair[0]
     #     nodeB = pair[1]
     q_sequence_detector = '''
-            MATCH (a)-[:DFG]->(b)
-            WHERE a.Name in $pair and b.Name in $pair
+            MATCH (a)-[:DFG]->(b) // hanya return arah yang sesuai
+            WHERE a.Name in $pair and b.Name in $pair 
             RETURN a.Name,b.Name
             '''
     result = session.run(q_sequence_detector, pair=pair)
@@ -50,6 +50,27 @@ def sequence_detector(session, pair):
             directSequence.append(records[0])  # source
             directSequence.append(records[1])  # destination
     return directSequence
+
+def sequence_detector_via_invisibleTask(session, pair):
+    sequence_detector_via_invisibleTask = '''
+            MATCH path = ((a)-[r:DFG* 0..10]->(b)) // hanya return arah yang sesuai
+            WHERE 
+            a.Name in $pair and 
+            b.Name in $pair and
+            a <> b and
+            ALL(x in nodes(path)[1..-1] WHERE x.label = 'Invisible') and
+            ALL(x in nodes(path)[1..-1] WHERE x:Activity)
+            RETURN a.Name,b.Name // hanya 1 nilai
+            '''
+    result = session.run(sequence_detector_via_invisibleTask, pair=pair)
+
+    inDirectSequence = []
+    for records in result:
+        if records is not None:
+            print(records)
+            inDirectSequence.append(records[0])  # source
+            inDirectSequence.append(records[1])  # destination
+    return inDirectSequence
 
 def incompleteConcurrentHandler(session, shorcutPair):
     nodeA = shorcutPair[0]
@@ -63,30 +84,103 @@ def incompleteConcurrentHandler(session, shorcutPair):
     session.run(q_incompleteConcurrentHandler, nodeA=nodeA, nodeB=nodeB)
     return None
 
+# versi 1: node invisible dihapus
+def incompleteConcurrentHandlerWithInvisibleTask(session, pair):
+    nodeA = pair[0]
+    nodeB = pair[1]
+    q_incompleteConcurrentHandler ='''
+        MATCH path = ((a {Name:$nodeA})-[r:DFG* 0..20]->(b {Name:$nodeB}))
+        WHERE
+        ALL(x in nodes(path)[1..-1] WHERE x.label = 'Invisible') and
+        ALL(x in nodes(path)[1..-1] WHERE x:Activity)
+        MERGE (a)-[s:CONCURRENT]->(b)
+        WITH s, path, nodes(path)[1..-1] as ns, relationships(path) as rs
+        WITH s, path, ns, rs, reduce(total=0, r IN rs | total + r.dff) AS total
+        SET s.dff = total
+        WITH s, ns
+        UNWIND ns as n
+        WITH DISTINCT n, s, collect(n.Name) AS nodeNames
+        DETACH DELETE n
+        RETURN nodeNames
+        '''
+    result= session.run(q_incompleteConcurrentHandler, nodeA=nodeA, nodeB=nodeB)
 
-def ICRHandlerBetweenRegion(session, regionA, regionB):
+    deletedNodeNames = []
+    for records in result:
+        if records is not None:
+            print(records)
+            deletedNodeNames.extend(records[0])  # source
+    return deletedNodeNames
+
+
+# # versi 2: node invisible dipertahankan hanya ubah relationship jadi concurrent
+# def incompleteConcurrentHandlerWithInvisibleTask(session, pair):
+#     nodeA = pair[0]
+#     nodeB = pair[1]
+#     q_incompleteConcurrentHandler ='''
+#         MATCH path = ((a {Name:$nodeA})-[r:DFG* 0..20]->(b {Name:$nodeB}))
+#         WHERE
+#         ALL(x in nodes(path)[1..-1] WHERE x.label = 'Invisible') and
+#         ALL(x in nodes(path)[1..-1] WHERE x:Activity)
+#         WITH nodes(path)[1..-1] as ns, relationships(path) as rels
+#         CALL apoc.refactor.rename.type("DFG", "CONCURRENT", rels)
+#         YIELD committedOperations
+#         RETURN committedOperations
+#         '''
+#     session.run(q_incompleteConcurrentHandler, nodeA=nodeA, nodeB=nodeB)
+#     return None
+
+
+def ICRHandlerBetweenRegion(session, regionA, regionB, joinNode, allValidEntrancePairToJoinBlock):
     shortcut = 0
+    removedInvNodes = None
+
     comb_nodes = pairCombBetweenLists(regionA, regionB)
     for pair in comb_nodes:
         shorcutPair = sequence_detector(session, pair)  # deteksi pasangan shorcut
+        shortcutViaInvisibleTask = sequence_detector_via_invisibleTask(session, pair)
         # print('shorcutPair= ',shorcutPair)
-        if len(shorcutPair) > 0:
-            print('ubah shortcut jadi concurrent')
+        if len(shorcutPair) > 0: # terdeteksi ada shortcut
             incompleteConcurrentHandler(session, shorcutPair)  # ubah shortcut menjadi concurrent
             shortcut += 1
-    return shortcut
+        elif len(shortcutViaInvisibleTask) > 0:
+            incompleteConcurrentHandlerWithInvisibleTask(session, shortcutViaInvisibleTask)  # ubah shortcut menjadi concurrent
+            shortcut += 1
+            # kalau shortcutPair adalah t dan salah satu dari S maka
+
+    # # periksa juga selain exit tidak boleh shortcut ke joinNOde
+    # # remove exit nodes
+    # regionA_new = regionA[0:-1]
+    # regionA_new.append(joinNode)
+    # regionB_new = regionB[0:-1]
+    # regionB_new.append(joinNode)
+    # comb_nodes = pairCombBetweenLists(regionA_new, regionB_new)
+    # for pair in comb_nodes:
+    #     shorcutPair = sequence_detector(session, pair)  # deteksi pasangan shorcut
+    #     shortcutViaInvisibleTask = sequence_detector_via_invisibleTask(session, pair)
+    #     # print('shorcutPair= ',shorcutPair)
+    #     if len(shorcutPair) > 0: # terdeteksi ada shortcut
+    #         incompleteConcurrentHandler(session, shorcutPair)  # ubah shortcut menjadi concurrent
+    #         shortcut += 1
+    #     elif len(shortcutViaInvisibleTask) > 0:
+    #         removedInvNodes = incompleteConcurrentHandlerWithInvisibleTask(session, shortcutViaInvisibleTask)  # ubah shortcut menjadi concurrent
+    #         shortcut += 1
+
+    return shortcut, removedInvNodes
 
 # [['BAPLIE', 'DISCHARGE', 'JOB_DEL'], ['BAPLIE', 'DISCHARGE', 'STACK']]
-def getEntranceToExitPath(session, entrance, joinNode):
+def getEntranceToExitPath(session, t, entrance, joinNode):
     q_findJoinPath = '''
         //OPTIONAL MATCH (q)-[:DFG]->(y {Name:$joinNode})
         //WITH q
         OPTIONAL MATCH path = (x {Name:$entrance})-[r:DFG*]->(y {Name:$joinNode})
+        WHERE none(x IN nodes(path) WHERE x.Name = $t)
         UNWIND nodes(path) as node
+        //WHERE none(t IN node
         WITH path, collect(node.Name) as names
         RETURN names
     '''
-    results = session.run(q_findJoinPath, entrance=entrance, joinNode=joinNode)
+    results = session.run(q_findJoinPath, t=t, entrance=entrance, joinNode=joinNode)
     paths = []
     status = 'Not found'
     for records in results:
@@ -101,9 +195,10 @@ def getEntranceToExitPath(session, entrance, joinNode):
     return paths, status
 
 
-def getAllXORPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes):
+def getAllXOREntranceToExitPaths(session, t, S, C, F, E, allJoinNodes):
     entrancePairList = combinationPairInList(list(E))
-    allEntranceCombPaths = []
+    allEntranceToExitPaths = []
+    insertInvTask = False
     for joinNode in allJoinNodes:
         for entrancePair in entrancePairList:
             # print('entrancePair====: ', entrancePair)
@@ -116,26 +211,28 @@ def getAllXORPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes
                     entrance = insertInvisibleTask(session,t, joinNode)
 
                     S, C, F = splitHelper.entranceScanner(session, t)
-                    allEntranceCombPaths = []
-                    return allEntranceCombPaths, S, C, F
+                    allEntranceToExitPaths = []
+                    insertInvTask = True
+
+                    return allEntranceToExitPaths, S, C, F, insertInvTask
 
                 # if entrance == joinNode:
                 #     entrancePairPaths.append([t,[[]],joinNode])
                 # else:
-                paths = getEntranceToExitPath(session, entrance, joinNode)
+                paths = getEntranceToExitPath(session, t, entrance, joinNode)
                 if paths[1] == 'Exist':
                     entrancePairPaths.append([entrance, paths[0], joinNode])
                 else:
                     entrancePairPaths = []
                     break
             if len(entrancePairPaths) > 0:
-                allEntranceCombPaths.append(entrancePairPaths)
+                allEntranceToExitPaths.append(entrancePairPaths)
 
-    return allEntranceCombPaths, S, C, F
+    return allEntranceToExitPaths, S, C, F, insertInvTask
 
-def getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes):
+def getAllANDEntranceToExitPaths(session, t, S, C, F, E, allJoinNodes):
     entrancePairList = combinationPairInList(list(E))
-    allEntranceCombPaths = []
+    allEntranceToExitPaths = []
     for entrancePair in entrancePairList:
         for joinNode in allJoinNodes:
             # print('entrancePair====: ', entrancePair)
@@ -152,7 +249,7 @@ def getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes
                 # if entrance == joinNode:
                 #     entrancePairPaths.append([t,[[]],joinNode])
                 # else:
-                paths = getEntranceToExitPath(session, entrance, joinNode)
+                paths = getEntranceToExitPath(session, t, entrance, joinNode)
                 if paths[1] == 'Exist':
                     entrancePairPaths.append([entrance, paths[0], joinNode])
                 else:
@@ -160,9 +257,9 @@ def getAllANDPathVariantsFromEntranceToExit(session, t, S, C, F, E, allJoinNodes
                     break
 
             if len(entrancePairPaths) > 0:
-                allEntranceCombPaths.append(entrancePairPaths)
+                allEntranceToExitPaths.append(entrancePairPaths)
 
-    return allEntranceCombPaths, S, C, F
+    return allEntranceToExitPaths, S, C, F
 
 def enumJoinNode(valid_blocks):
     # ('CUSTOMS_DEL', 'VESSEL_ATB'): [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE'], 3], ['TRUCK_IN', ['JOB_DEL', 'STACK'], 5]]}
@@ -356,7 +453,10 @@ def mergeSameGwInSequence(session):
         #         result = False
     return result
 
-def insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName):
+# jika antara exit dan joinNode ada gw asing maka posisi exit diganti dg yg terdekat
+# TODO: dapatkan nilai t untuk tiap joinGateway
+def updateExitNodeWithTheClosestNodeToJoinNode(session, splitNode, exitNodes, joinNodeName):
+    insertInvTask = False
     while True:
         finish = True
         for exitNode in exitNodes:
@@ -369,6 +469,15 @@ def insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName):
 
             if sequence_detector(session, pair):
                 pass  # aman, tidak ada node lain
+            elif exitNode == joinNodeName: # menyisipkan invTask sekaligus sbg exit baru
+                invTask=insertInvisibleTask(session, splitNode, joinNodeName)
+                insertInvTask = True
+                newExit = invTask
+                oldExit = exitNode
+                exitNodes.remove(oldExit)
+                exitNodes.append(newExit)
+                finish = False
+
             else:  # ada node lain
                 newExit = getTheDirectExitToJoinNode(session, exitNode, joinNodeName)
                 oldExit = exitNode
@@ -378,3 +487,49 @@ def insertInvisibleTaskBetweenDirectGW(session, exitNodes, joinNodeName):
         if finish == True:
             break
     return exitNodes
+
+def detectLoopInsertInvTask(session):
+    q_detectLoop = '''
+        MATCH (a)-[r:DFG]->(a:RefModel)
+        MERGE (a)-[s:DFG {rel:r.rel}]->(invTask:Loop:Activity:RefModel {Name:"inv"+"_loop_"+a.Name})
+        SET s.dff = r.dff
+        WITH s, r, invTask, a
+        MERGE (invTask)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
+        // hapus r
+        DELETE r
+        SET 
+        s.split = True, 
+        t.dff = s.dff, 
+        t.join = True, 
+        invTask.label= 'Invisible'
+        RETURN invTask.Name
+
+        '''
+    results = session.run(q_detectLoop)
+
+    result = []
+    for record in results:
+        result.append(record[0])
+    return result
+
+def removeSelfLoop(session):
+    q_removeLoop = '''
+        MATCH (a:RefModel)-[r:DFG]->(a:RefModel)
+        // hapus r
+        DELETE r
+
+        '''
+    results = session.run(q_removeLoop)
+
+    result = []
+    for record in results:
+        result.append(record[0])
+    return result
+
+def removeInvisibleTaskWithConcurrentRelationship(session):
+    q_removeInvTaskConcurrent = '''
+        MATCH (a)-[:CONCURRENT]->(b:Activity {label:'Invisible'})-[:CONCURRENT]->(c)
+        DETACH DELETE b
+    
+    '''
+    session.run(q_removeInvTaskConcurrent)
