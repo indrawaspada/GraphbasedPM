@@ -177,11 +177,11 @@ if __name__ == '__main__':
     # filename = 'df_red.csv'
     # filename = 'df_red_ok.csv'
     # filename = 'df_yellow.csv'
-    filename = 'df_yellow_f10.csv'
+    # filename = 'df_yellow_f10.csv'
     #
     # filename = "bpic12_A.csv"
     # filename = "bpic12_O.csv"
-    # filename = "df_bpic12_AO.csv" # ada AND pendek
+    filename = "df_bpic12_AO.csv" # ada AND pendek
     # filename = "df_bpic12_AW.csv" #
     # filename = "df_bpic12_W.csv" #
     # filename = "df_bpic12_AO_all_30.csv"
@@ -233,9 +233,12 @@ if __name__ == '__main__':
             discoverAND.insertANDJoinGW(session, exitNodes, joinGW_name, joinNodeName)
         elif g[0][:3] == 'xor':
             discoverXOR.insertXORJoinGW(session, exitNodes, joinGW_name, joinNodeName)
+
         # setelah insert joinGW maka jika ada joinNodeName di joinGWList di replace dengan JoinNodename
         for joinNode in join_GWlist:
-            if joinNode[3] == joinNodeName:
+            exitPairs = joinNode[2]
+            # jika
+            if joinNode[3] == joinNodeName and generalHelper.isThereAPath(session, exitPairs, joinGW_name):
                 joinNode[3] = joinGW_name
 
 

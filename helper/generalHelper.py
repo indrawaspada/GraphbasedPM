@@ -533,3 +533,25 @@ def removeInvisibleTaskWithConcurrentRelationship(session):
     
     '''
     session.run(q_removeInvTaskConcurrent)
+
+
+def isThereAPath(session, exitPairs, joinGW_name):
+    status = False
+    for exitNode in exitPairs:
+        q_path_checker = '''
+            OPTIONAL MATCH path = (x {Name:$exitNode})-[r:DFG*]->(y {Name:$joinGW_name})
+            UNWIND nodes(path) as node
+            WITH path, collect(node.Name) as names
+            RETURN names
+        '''
+        results = session.run(q_path_checker, exitNode=exitNode, joinGW_name=joinGW_name)
+        status = False
+        for records in results:
+            for record in records:
+                if record is not None:
+                    status = True
+                    print(record)
+                else:
+                    status = False
+                    return status
+    return status

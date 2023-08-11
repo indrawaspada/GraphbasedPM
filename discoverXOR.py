@@ -191,7 +191,7 @@ def insertXORJoinGW(session, exitNodes, xorJoinGW_name, joinNodeName):
 
     q_xorJoin = '''
             MATCH (a:RefModel)-[r:DFG]->(n {Name:$joinNodeName})
-            WHERE a.Name in $exitNodes
+            WHERE a.Name in $exitNodes //and NOT a:GW 
             MERGE (joinGW:GW:RefModel {Name:$xorJoinGW_name})-[s:DFG {rel:r.rel}]->(n)
             WITH a, s, r, joinGW
             MERGE (a)-[t:DFG {rel:r.rel, dff:r.dff}]->(joinGW)

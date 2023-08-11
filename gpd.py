@@ -21,9 +21,9 @@ class GraphbasedDiscovery:
         # S, C, F = splitHelper.entranceScanner(session, t)
         while len(T) > 0: # ada splitNodes yang belum diperiksa
             t = splitHelper.closestSplitNode(session, initialNodeName, T)[1]  # t
-            if t is None:
+            if t is None: # kok bisa None?
                 try:
-                    T.pop(0)
+                    T.pop(0) # ambil yg paling depan
                 except BaseException as ex:
                     ex_type, ex_value, ex_traceback = sys.exc_info()
                     trace_back = traceback.extract_tb(ex_traceback)

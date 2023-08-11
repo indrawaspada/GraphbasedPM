@@ -48,9 +48,7 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
             paths1 = entranceToExitPaths[1][1]
             joinNode = entranceToExitPaths[0][2]
             print("joinNode= ", joinNode)
-
-
-            # dapat valid kandidat regions
+            # dapat valid kandidat blocks
             allValidBlocks = joinHelper.getValidBlocks(paths0,paths1)  # dapat path yg valid, bs lebih dari 1
             print('validEntranceCombPaths= ', allValidBlocks)
 
@@ -67,6 +65,7 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
                 # output: number of shorcut found
                 shortcut, removedInvNodes = generalHelper.ICRHandlerBetweenRegion(session, regionA, regionB, joinNode, allValidBlocks) # icr = incomplete concurrent relationship
 
+                # semetara bagian if ini diabaikan
                 if removedInvNodes: # not None
                     for removedInvNode in removedInvNodes:
                         validBlock = funcHelper.traverse_nested_list(validBlock, removedInvNode)
@@ -85,6 +84,8 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
                         valid_blocks[entrancePair].append([joinNode, exit, distance])  # 27 mei 2023, sudah ada distance
 
         print('valid_blocks==> ', valid_blocks)
+        # valid_blocks adalah sebuah entrancePair dengan semua pasangan exitPair dan joinNode nya
+        # (entrance_pairs): [joinNode, [exitPairs]]
         # valid_blocks==>  {
         # ('BAPLIE', 'VESSEL_ATB'): [['DISCHARGE', ['BAPLIE', 'VESSEL_ATB'], 2]],
         # ('BAPLIE', 'CUSTOMS_DEL'): [['JOB_DEL', ['CUSTOMS_DEL', 'DISCHARGE'], 3], ['TRUCK_IN', ['JOB_DEL', 'STACK'], 5]],
@@ -112,6 +113,7 @@ def discoverAND(session, t, S, C, F, counter, joinGWlist, joinANDgw):
         # cari block hirarki dengan join node terdekat, ciri2nya punya entrance paling sedikit dan jarak ke join node terdekat
         H = blockHelper.getTheNextHierarchies(joinNode_have_MergedBlocks)
 
+        # h = [[entrancePairs, exitParis, distance], joinNode]
         for h in H:
             # insert split_AND_gw
             SCP = list(h[0][0])  # SCP = entrances, bisa lebih dari 2
@@ -155,7 +157,7 @@ def insertANDSplitGW(session, splitNodeName, conPair, counter):
 
     q_split = '''
             MATCH (n {Name:$splitNodeName})-[r:DFG]->(a:RefModel)
-            WHERE a.Name in $conPair
+            WHERE a.Name in $conPair 
             MERGE (n)-[s:DFG {rel:r.rel}]->(splitGW:GW:RefModel {Name:"andSplitGW"+"_"+$counter})
             WITH s, r, splitGW, a
             MERGE (splitGW)-[t:DFG {rel:r.rel, dff:r.dff}]->(a)
@@ -182,7 +184,7 @@ def insertANDJoinGW(session, exitNodes, andJoinGW_name, joinNodeName):
 
     q_andJoin = '''
             MATCH (a:RefModel)-[r:DFG]->(n {Name:$joinNodeName})
-            WHERE a.Name in $exitNodes
+            WHERE a.Name in $exitNodes //and NOT a:GW 
             MERGE (joinGW:GW:RefModel {Name:$andJoinGW_name})-[s:DFG {rel:r.rel}]->(n)
             WITH s, r, joinGW, a
             MERGE (a)-[t:DFG {rel:r.rel, dff:r.dff}]->(joinGW)
